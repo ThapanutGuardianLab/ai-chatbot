@@ -10,7 +10,9 @@ import {
   foreignKey,
   boolean,
   vector,
+  index,
 } from "drizzle-orm/pg-core";
+import { createSelectSchema } from "drizzle-zod";
 
 export const user = pgTable("User", {
   id: uuid("id").primaryKey().notNull().defaultRandom(),
@@ -184,3 +186,41 @@ export const knowledgeBase = pgTable(
 );
 
 export type KnowledgeBase = InferSelectModel<typeof knowledgeBase>;
+
+export const documents = pgTable("documents", {
+  id: uuid("id").primaryKey().notNull().defaultRandom(),
+  content: text("content").notNull(),
+  createdAt: timestamp("createdAt").notNull().defaultNow(),
+  updatedAt: timestamp("updatedAt").notNull().defaultNow(),
+});
+
+export const insertDocumentSchema = createSelectSchema(documents)
+  .extend({})
+  .omit({
+    id: true,
+    createdAt: true,
+    updatedAt: true,
+  });
+
+export type Documents = InferSelectModel<typeof documents>;
+
+export const embeddings = pgTable(
+  "embeddings",
+  {
+    id: uuid("id").notNull().defaultRandom(),
+    documentId: uuid("documentId")
+      .notNull()
+      .references(() => document.id, { onDelete: "cascade" }),
+    content: text("content"),
+    embedding: vector("embedding", { dimensions: 1536 }).notNull(),
+    createdAt: timestamp("createdAt").notNull().defaultNow(),
+  },
+  (table) => ({
+    embeddingIndex: index("embeddingIndex").using(
+      "hnsw",
+      table.embedding.op("vector_cosine_ops")
+    ),
+  })
+);
+
+export type Embeddings = InferSelectModel<typeof embeddings>;

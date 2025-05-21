@@ -1,3 +1,4 @@
+import { embeddings as embeddingsTable } from "../db/schema";
 import "server-only";
 
 import {
@@ -10,6 +11,7 @@ import {
   gt,
   gte,
   inArray,
+  InferInsertModel,
   lt,
   sql,
   type SQL,
@@ -29,13 +31,15 @@ import {
   type DBMessage,
   type Chat,
   stream,
-  knowledgeBase,
+  insertDocumentSchema,
+  documents,
+  embeddings,
 } from "./schema";
 import type { ArtifactKind } from "@/components/artifact";
 import { generateUUID } from "../utils";
 import { generateHashedPassword } from "./utils";
 import type { VisibilityType } from "@/components/visibility-selector";
-import { generateEmbedding } from "../ai/embedding";
+import { generateEmbedding, generateEmbeddings } from "../ai/embedding";
 
 // Optionally, if not using email/pass login, you can
 // use the Drizzle adapter for Auth.js / NextAuth
@@ -518,18 +522,37 @@ export async function getStreamIdsByChatId({ chatId }: { chatId: string }) {
   }
 }
 
-export async function storeChunksWithEmbeddings(
-  data: Array<{ embedding: number[]; content: string }>
-) {
+export async function insertDocument(
+  data: string
+): Promise<InferInsertModel<typeof documents>[]> {
   try {
-    return await db.insert(knowledgeBase).values(data);
+    const { content } = insertDocumentSchema.parse({ content: data });
+    return await db.insert(documents).values({ content }).returning();
   } catch (error) {
     console.error("Failed to store chunks with embeddings in database");
     throw error;
   }
 }
 
-export const findRelevantContent = async ({
+export async function storeChunksWithEmbeddings(
+  documentId: string,
+  data: string
+) {
+  try {
+    const embeddings = await generateEmbeddings(data);
+    await db.insert(embeddingsTable).values(
+      embeddings.map((embedding) => ({
+        resourceId: documentId,
+        ...embedding,
+      }))
+    );
+  } catch (error) {
+    console.error("Failed to store chunks with embeddings in database");
+    throw error;
+  }
+}
+
+/* export const findRelevantContent = async ({
   userQuery,
   similarity = 0.5,
   k = 4,
@@ -551,3 +574,4 @@ export const findRelevantContent = async ({
     .limit(k);
   return similarGuides;
 };
+ */

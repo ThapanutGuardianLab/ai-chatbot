@@ -1,9 +1,12 @@
+import { document } from "./../../../../../../lib/db/schema";
 import { NextResponse } from "next/server";
 import { auth } from "@/app/(auth)/auth";
 import { extractTextFromBlob } from "@/utils/parseFile";
 import { z } from "zod";
 import { generateEmbeddings } from "@/lib/ai/embedding";
-import { storeChunksWithEmbeddings } from "@/lib/db/queries";
+// import { storeChunksWithEmbeddings } from "@/lib/db/queries";
+import { insertDocumentSchema } from "@/lib/db/schema";
+import { insertDocument, storeChunksWithEmbeddings } from "@/lib/db/queries";
 
 const FileSchema = z.object({
   file: z
@@ -48,8 +51,8 @@ export async function POST(request: Request) {
     const text = await extractTextFromBlob(file, file.name);
     let embeddings = null;
     if (text) {
-      embeddings = await generateEmbeddings(text);
-      await storeChunksWithEmbeddings(embeddings);
+      const [document] = await insertDocument(text);
+      await storeChunksWithEmbeddings(document.id!, text);
     }
     return NextResponse.json({ text, embeddings }, { status: 200 });
   } catch (error) {
