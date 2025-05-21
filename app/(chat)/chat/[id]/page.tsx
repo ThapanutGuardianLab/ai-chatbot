@@ -13,13 +13,14 @@ export default async function Page(props: { params: Promise<{ id: string }> }) {
   const params = await props.params;
   const { id } = params;
   const chat = await getChatById({ id });
-
+  console.log('Chat 😎 : ', chat);
+  
   if (!chat) {
     notFound();
   }
 
   const session = await auth();
-
+  console.log('Session 🔒 : ', session);
   if (!session) {
     redirect('/api/auth/guest');
   }
