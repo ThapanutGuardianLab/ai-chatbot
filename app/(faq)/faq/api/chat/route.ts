@@ -1,6 +1,7 @@
 import { streamText, tool } from "ai";
 import { z } from "zod";
 import { myProvider } from "@/lib/ai/providers";
+import { findRelevantContent } from "@/lib/db/queries";
 // import { findRelevantContent } from "@/lib/db/queries";
 
 // Allow streaming responses up to 30 seconds
@@ -22,11 +23,10 @@ export async function POST(req: Request) {
         parameters: z.object({
           question: z.string().describe("the users question"),
         }),
-        /* execute: async ({ question }) =>
+        execute: async ({ question }) =>
           findRelevantContent({
             userQuery: question,
-            similarity: 0.5,
-          }), */
+          }),
       }),
     },
   });

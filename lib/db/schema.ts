@@ -172,22 +172,7 @@ export const stream = pgTable(
 
 export type Stream = InferSelectModel<typeof stream>;
 
-export const knowledgeBase = pgTable(
-  "Knowledge_base",
-  {
-    id: uuid("id").notNull().defaultRandom(),
-    content: text("content"),
-    embedding: vector("embedding", { dimensions: 1536 }).notNull(),
-    createdAt: timestamp("createdAt").notNull().defaultNow(),
-  },
-  (table) => ({
-    pk: primaryKey({ columns: [table.id] }), // Define a primary key
-  })
-);
-
-export type KnowledgeBase = InferSelectModel<typeof knowledgeBase>;
-
-export const documents = pgTable("documents", {
+export const documents = pgTable("Documents", {
   id: uuid("id").primaryKey().notNull().defaultRandom(),
   content: text("content").notNull(),
   createdAt: timestamp("createdAt").notNull().defaultNow(),
@@ -205,12 +190,12 @@ export const insertDocumentSchema = createSelectSchema(documents)
 export type Documents = InferSelectModel<typeof documents>;
 
 export const embeddings = pgTable(
-  "embeddings",
+  "Embeddings",
   {
-    id: uuid("id").notNull().defaultRandom(),
+    id: uuid("id").primaryKey().notNull().defaultRandom(),
     documentId: uuid("documentId")
       .notNull()
-      .references(() => document.id, { onDelete: "cascade" }),
+      .references(() => documents.id, { onDelete: "cascade" }),
     content: text("content"),
     embedding: vector("embedding", { dimensions: 1536 }).notNull(),
     createdAt: timestamp("createdAt").notNull().defaultNow(),

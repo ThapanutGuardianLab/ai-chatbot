@@ -542,7 +542,7 @@ export async function storeChunksWithEmbeddings(
     const embeddings = await generateEmbeddings(data);
     await db.insert(embeddingsTable).values(
       embeddings.map((embedding) => ({
-        resourceId: documentId,
+        documentId,
         ...embedding,
       }))
     );
@@ -552,7 +552,7 @@ export async function storeChunksWithEmbeddings(
   }
 }
 
-/* export const findRelevantContent = async ({
+export const findRelevantContent = async ({
   userQuery,
   similarity = 0.5,
   k = 4,
@@ -563,15 +563,16 @@ export async function storeChunksWithEmbeddings(
 }) => {
   const userQueryEmbedded = await generateEmbedding(userQuery);
   const similaritySQL = sql<number>`1 - (${cosineDistance(
-    knowledgeBase.embedding,
+    embeddings.embedding,
     userQueryEmbedded
   )})`;
   const similarGuides = await db
-    .select({ name: knowledgeBase.content, similaritySQL })
-    .from(knowledgeBase)
+    .select({ name: embeddings.content, similaritySQL })
+    .from(embeddings)
     .where(gt(similaritySQL, similarity))
     .orderBy((t) => desc(t.similaritySQL))
     .limit(k);
+  console.log("similarGuides 🔥 : ", similarGuides);
+
   return similarGuides;
 };
- */
