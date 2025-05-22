@@ -15,6 +15,7 @@ const nextConfig: NextConfig = {
   },
   experimental: {
     ppr: true,
+    serverComponentsExternalPackages: ["pdf-parse"],
   },
   images: {
     remotePatterns: [
