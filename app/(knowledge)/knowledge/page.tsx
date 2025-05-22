@@ -28,15 +28,14 @@ export default function Page() {
     const file = e.dataTransfer.files[0];
     if (file) {
       setSelectedFile(file);
-      console.log("Dropped file:", file);
     }
   };
 
   const handleFileChange = (e: React.ChangeEvent<HTMLInputElement>) => {
     const file = e.target.files?.[0];
     if (file) {
+      e.preventDefault();
       setSelectedFile(file);
-      console.log("Selected file:", file);
     }
   };
 
@@ -54,16 +53,22 @@ export default function Page() {
     })
       .then((res) => res.json())
       .then((data) => {
-        console.log("Upload success:", data);
-        setLoading(false);
-        setSelectedFile(null);
-        toast.success("File uploaded successfully!");
+        if (data.error) {
+          toast.error(data.error);
+          console.error("API error:", data.error);
+        } else {
+          toast.success("File uploaded successfully!");
+          console.log("API response:", data);
+        }
       })
       .catch((err) => {
-        console.error("Upload error:", err);
+        console.log("Error uploading file:", err);
+        toast.error("File upload failed. Please try again.");
+      })
+      .finally(() => {
         setLoading(false);
         setSelectedFile(null);
-        toast.error("File upload failed. Please try again.");
+        if (fileInputRef.current) fileInputRef.current.value = "";
       });
   };
 
@@ -97,7 +102,10 @@ export default function Page() {
           className={`absolute top-4 right-4 ${
             !selectedFile ? "!cursor-not-allowed" : "!cursor-pointer"
           }`}
-          onClick={() => setSelectedFile(null)}
+          onClick={() => {
+            setSelectedFile(null);
+            if (fileInputRef.current) fileInputRef.current.value = "";
+          }}
         >
           <TrashIcon
             className={`${selectedFile ? "text-red-500" : "text-zinc-400"}`}

@@ -1,11 +1,7 @@
-import { document } from "./../../../../../../lib/db/schema";
 import { NextResponse } from "next/server";
 import { auth } from "@/app/(auth)/auth";
 import { extractTextFromBlob } from "@/utils/parseFile";
 import { z } from "zod";
-import { generateEmbeddings } from "@/lib/ai/embedding";
-// import { storeChunksWithEmbeddings } from "@/lib/db/queries";
-import { insertDocumentSchema } from "@/lib/db/schema";
 import { insertDocument, storeChunksWithEmbeddings } from "@/lib/db/queries";
 
 const FileSchema = z.object({
