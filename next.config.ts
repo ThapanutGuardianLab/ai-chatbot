@@ -15,7 +15,7 @@ const nextConfig: NextConfig = {
   },
   experimental: {
     ppr: true,
-    serverComponentsExternalPackages: ["pdf-parse"],
+    serverComponentsExternalPackages: ["pdf-parse", "mammoth"],
   },
   images: {
     remotePatterns: [
