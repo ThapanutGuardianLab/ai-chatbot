@@ -1,4 +1,3 @@
-import { embeddings as embeddingsTable } from "../db/schema";
 import "server-only";
 
 import {
@@ -31,9 +30,9 @@ import {
   type DBMessage,
   type Chat,
   stream,
-  insertDocumentSchema,
-  documents,
   embeddings,
+  documents,
+  insertDocumentSchema,
 } from "./schema";
 import type { ArtifactKind } from "@/components/artifact";
 import { generateUUID } from "../utils";
@@ -539,9 +538,9 @@ export async function storeChunksWithEmbeddings(
   data: string
 ) {
   try {
-    const embeddings = await generateEmbeddings(data);
-    await db.insert(embeddingsTable).values(
-      embeddings.map((embedding) => ({
+    const newEmbeddings = await generateEmbeddings(data);
+    await db.insert(embeddings).values(
+      newEmbeddings.map((embedding) => ({
         documentId,
         ...embedding,
       }))
@@ -572,7 +571,5 @@ export const findRelevantContent = async ({
     .where(gt(similaritySQL, similarity))
     .orderBy((t) => desc(t.similaritySQL))
     .limit(k);
-  console.log("similarGuides 🔥 : ", similarGuides);
-
   return similarGuides;
 };
