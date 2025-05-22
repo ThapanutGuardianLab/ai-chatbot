@@ -47,7 +47,7 @@ export async function POST(request: Request) {
     const text = await extractTextFromBlob(file, file.name);
     let embeddings = null;
     if (text) {
-      const [document] = await insertDocument(text);
+      const [document] = await insertDocument(file.name);
       await storeChunksWithEmbeddings(document.id!, text);
     }
     return NextResponse.json({ text, embeddings }, { status: 200 });

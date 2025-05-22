@@ -525,8 +525,8 @@ export async function insertDocument(
   data: string
 ): Promise<InferInsertModel<typeof documents>[]> {
   try {
-    const { content } = insertDocumentSchema.parse({ content: data });
-    return await db.insert(documents).values({ content }).returning();
+    const { documentName } = insertDocumentSchema.parse({ documentName: data });
+    return await db.insert(documents).values({ documentName }).returning();
   } catch (error) {
     console.error("Failed to store chunks with embeddings in database");
     throw error;

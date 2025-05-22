@@ -174,7 +174,7 @@ export type Stream = InferSelectModel<typeof stream>;
 
 export const documents = pgTable("Documents", {
   id: uuid("id").primaryKey().notNull().defaultRandom(),
-  content: text("content").notNull(),
+  documentName: text("documentName").notNull(),
   createdAt: timestamp("createdAt").notNull().defaultNow(),
   updatedAt: timestamp("updatedAt").notNull().defaultNow(),
 });
