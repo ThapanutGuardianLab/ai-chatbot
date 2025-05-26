@@ -30,9 +30,7 @@ import {
   type DBMessage,
   type Chat,
   stream,
-  embeddings,
-  documents,
-  insertDocumentSchema,
+  bankingPerformances,
 } from "./schema";
 import type { ArtifactKind } from "@/components/artifact";
 import { generateUUID } from "../utils";
@@ -520,56 +518,3 @@ export async function getStreamIdsByChatId({ chatId }: { chatId: string }) {
     throw error;
   }
 }
-
-export async function insertDocument(
-  data: string
-): Promise<InferInsertModel<typeof documents>[]> {
-  try {
-    const { documentName } = insertDocumentSchema.parse({ documentName: data });
-    return await db.insert(documents).values({ documentName }).returning();
-  } catch (error) {
-    console.error("Failed to store chunks with embeddings in database");
-    throw error;
-  }
-}
-
-export async function storeChunksWithEmbeddings(
-  documentId: string,
-  data: string
-) {
-  try {
-    const newEmbeddings = await generateEmbeddings(data);
-    await db.insert(embeddings).values(
-      newEmbeddings.map((embedding) => ({
-        documentId,
-        ...embedding,
-      }))
-    );
-  } catch (error) {
-    console.error("Failed to store chunks with embeddings in database");
-    throw error;
-  }
-}
-
-export const findRelevantContent = async ({
-  userQuery,
-  similarity = 0.5,
-  k = 4,
-}: {
-  userQuery: string;
-  similarity?: number;
-  k?: number;
-}) => {
-  const userQueryEmbedded = await generateEmbedding(userQuery);
-  const similaritySQL = sql<number>`1 - (${cosineDistance(
-    embeddings.embedding,
-    userQueryEmbedded
-  )})`;
-  const similarGuides = await db
-    .select({ name: embeddings.content, similaritySQL })
-    .from(embeddings)
-    .where(gt(similaritySQL, similarity))
-    .orderBy((t) => desc(t.similaritySQL))
-    .limit(k);
-  return similarGuides;
-};

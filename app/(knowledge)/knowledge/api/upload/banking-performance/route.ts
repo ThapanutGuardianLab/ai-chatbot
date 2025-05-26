@@ -2,7 +2,7 @@ import { NextResponse } from "next/server";
 import { auth } from "@/app/(auth)/auth";
 import { extractTextFromBlob } from "@/utils/parseFile";
 import { z } from "zod";
-import { insertDocument, storeChunksWithEmbeddings } from "@/lib/db/queries";
+import { insertDocumentWithEmbeddings } from "@/lib/db/banking-performance/queries";
 
 const FileSchema = z.object({
   file: z
@@ -25,17 +25,25 @@ const FileSchema = z.object({
 
 export async function POST(request: Request) {
   const session = await auth();
+  console.log("session 👀 : ", session);
+
   if (!session)
     return NextResponse.json({ error: "Unauthorized" }, { status: 401 });
 
   const formData = await request.formData();
   const file = formData.get("file");
+  const quarter = formData.get("quarter");
 
   if (!(file instanceof Blob)) {
     return NextResponse.json({ error: "No file uploaded" }, { status: 400 });
   }
 
+  if (quarter === null || quarter === undefined) {
+    return NextResponse.json({ error: "No quarter provided" }, { status: 400 });
+  }
+
   const validation = FileSchema.safeParse({ file });
+
   if (!validation.success) {
     const errorMessage = validation.error.errors
       .map((e) => e.message)
@@ -45,12 +53,17 @@ export async function POST(request: Request) {
 
   try {
     const text = await extractTextFromBlob(file, file.name);
-    let embeddings = null;
+
     if (text) {
-      const [document] = await insertDocument(file.name);
-      await storeChunksWithEmbeddings(document.id!, text);
+      const quarterStg = quarter as string;
+      await insertDocumentWithEmbeddings(quarterStg, text);
+      return new Response(null, { status: 200 });
+    } else {
+      return NextResponse.json(
+        { error: "No text extracted from file" },
+        { status: 400 }
+      );
     }
-    return NextResponse.json({ text, embeddings }, { status: 200 });
   } catch (error) {
     console.error("Error from pdf-parse:", error);
     return NextResponse.json(

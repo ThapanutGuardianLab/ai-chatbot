@@ -11,6 +11,7 @@ import {
   boolean,
   vector,
   index,
+  real,
 } from "drizzle-orm/pg-core";
 import { createSelectSchema } from "drizzle-zod";
 
@@ -172,40 +173,35 @@ export const stream = pgTable(
 
 export type Stream = InferSelectModel<typeof stream>;
 
-export const documents = pgTable("Documents", {
+export const bankingPerformances = pgTable("BankingPerformances", {
   id: uuid("id").primaryKey().notNull().defaultRandom(),
-  documentName: text("documentName").notNull(),
+  quarter: text("quarter").notNull(),
+  content: text("content"),
+  embedding: vector("embedding", { dimensions: 1536 }).notNull(),
+  createdAt: timestamp("createdAt").notNull().defaultNow(),
+});
+
+export type BankingPerformances = InferSelectModel<typeof bankingPerformances>;
+
+export const financialPerformances = pgTable("FinancialPerformances", {
+  id: uuid("id").primaryKey().notNull().defaultRandom(),
+  quarter: text("quarter").notNull(),
+  netProfit: real("netProfit").notNull(),
+  basicEarningsPerShare: real("basicEarningsPerShare").notNull(),
+  InterestIncomeNet: real("InterestIncomeNet").notNull(),
+  NonInterestIncome: real("NonInterestIncome").notNull(),
+  feesAndServiceIncomeNet: real("feesAndServiceIncomeNet").notNull(),
+  netPremiumsEarnedNet: real("netPremiumsEarnedNet").notNull(),
+  otherIncome: real("otherIncome").notNull(),
+  totalOperatingIncomeNet: real("totalOperatingIncomeNet").notNull(),
+  totalOtherOperatingExpenses: real("totalOtherOperatingExpenses").notNull(),
+  operatingProfitBeforeEclAndTax: real(
+    "operatingProfitBeforeEclAndTax"
+  ).notNull(),
   createdAt: timestamp("createdAt").notNull().defaultNow(),
   updatedAt: timestamp("updatedAt").notNull().defaultNow(),
 });
 
-export const insertDocumentSchema = createSelectSchema(documents)
-  .extend({})
-  .omit({
-    id: true,
-    createdAt: true,
-    updatedAt: true,
-  });
-
-export type Documents = InferSelectModel<typeof documents>;
-
-export const embeddings = pgTable(
-  "Embeddings",
-  {
-    id: uuid("id").primaryKey().notNull().defaultRandom(),
-    documentId: uuid("documentId")
-      .notNull()
-      .references(() => documents.id, { onDelete: "cascade" }),
-    content: text("content"),
-    embedding: vector("embedding", { dimensions: 1536 }).notNull(),
-    createdAt: timestamp("createdAt").notNull().defaultNow(),
-  },
-  (table) => ({
-    embeddingIndex: index("embeddingIndex").using(
-      "hnsw",
-      table.embedding.op("vector_cosine_ops")
-    ),
-  })
-);
-
-export type Embeddings = InferSelectModel<typeof embeddings>;
+export type FinancialPerformances = InferSelectModel<
+  typeof financialPerformances
+>;
