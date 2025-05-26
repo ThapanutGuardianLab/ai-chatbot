@@ -8,7 +8,15 @@ export type GetSimilarityQuarterRequest = {
   limit?: number;
   similarityThreshold?: number;
 };
+
 export type GetSimilarityQuarterResponse = {
   quarter: string;
   similarity: number;
 }[];
+
+export type GetFinancialPerformanceByQuarterRequest = {
+  quartersInYear: string;
+};
+export type GetFinancialPerformanceByQuarterResponse = InferModel<
+  typeof financialPerformances
+>;

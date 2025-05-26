@@ -17,6 +17,8 @@ import postgres from "postgres";
 
 import { generateEmbedding, generateEmbeddings } from "@/lib/ai/embedding";
 import {
+  GetFinancialPerformanceByQuarterRequest,
+  GetFinancialPerformanceByQuarterResponse,
   GetSimilarityQuarterRequest,
   GetSimilarityQuarterResponse,
 } from "@/types/db/banking-performance";
@@ -143,9 +145,49 @@ export async function getSimilarityQuarter({
     console.log(
       "-------------- Called getSimilarityQuarter successfully! ✅ --------------"
     );
+    if (!similarGuides || similarGuides.length === 0) {
+      console.warn("No similar quarters found for the given query.");
+      return [];
+    }
     return similarGuides;
   } catch (error) {
     console.error("Failed to get similar quarters from database", error);
     throw error;
   }
+}
+
+export async function getFinancialPerformanceByQuarter({
+  quartersInYear,
+}: GetFinancialPerformanceByQuarterRequest): Promise<GetFinancialPerformanceByQuarterResponse> {
+  try {
+    const normalizedQuarterInYear = quartersInYear.toUpperCase();
+    const [selectedDocument] = await db
+      .select()
+      .from(financialPerformances)
+      .where(eq(financialPerformances.quarter, normalizedQuarterInYear))
+      .orderBy(desc(financialPerformances.createdAt));
+    if (!selectedDocument) {
+      console.warn(
+        `No financial performance data found for quarter: ${quartersInYear}`
+      );
+      return null;
+    }
+    console.log(
+      "Selected financial performance document 😎 : ",
+      selectedDocument
+    );
+
+    return selectedDocument;
+  } catch (error) {
+    console.error(
+      "Failed to get financial performance by quarter from database"
+    );
+    throw error;
+  }
+}
+
+export async function getSimilarityMultiYearQuarter() {
+  // This function is a placeholder for future implementation
+  // It should handle multiple years and return similar quarters
+  throw new Error("getSimilarityMultiYearQuarter is not implemented yet.");
 }

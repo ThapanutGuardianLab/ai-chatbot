@@ -3,7 +3,10 @@ import { z } from "zod";
 import { myProvider } from "@/lib/ai/providers";
 import { quartersToYears } from "date-fns";
 import { quartersInYear } from "date-fns/constants";
-import { getSimilarityQuarter } from "@/lib/db/banking-performance/queries";
+import {
+  getFinancialPerformanceByQuarter,
+  getSimilarityQuarter,
+} from "@/lib/db/banking-performance/queries";
 
 export const maxDuration = 30;
 
@@ -111,16 +114,23 @@ getFinancialPerformance(question="Q2/26")
       getFinancialPerformance: tool({
         description: `Tool to get Financial Performance from your knowledge base to answer questions.`,
         parameters: z.object({
+          /* question: z
+            .string()
+            .describe(
+              "The user's natural language question about financial performance, e.g., 'What is the financial performance for Q2/26?'"
+            ), */
           quartersInYear: z
             .string()
             .describe(
               "Quarter and year in the format 'Q#/YY', e.g., 'Q1/26' for the first quarter of 2026."
             ),
         }),
-        execute: async ({ quartersInYear }) => {
-          console.log(
-            `Fetching financial performance 💰 for ${quartersInYear}... 👀🔍`
-          );
+        execute: async ({ /* question,  */ quartersInYear }) => {
+          console.log(`Fetching financial performance 💰... 👀🔍`);
+          /* console.log(`Question 🏦 : ${question}`); */
+          console.log(`Quarter 🗓️: ${quartersInYear}`);
+
+          return await getFinancialPerformanceByQuarter({ quartersInYear });
         },
       }),
       getMultiYearFinancialPerformance: tool({
