@@ -1,15 +1,13 @@
 import { auth } from "@/app/(auth)/auth";
-import { getDocumentById } from "@/lib/db/banking-performance/queries";
-import { GetBankingPerformancesIdRequest } from "@/types/api/banking-performance/banking-performance.request";
+import { getDocumentByQuarter } from "@/lib/db/banking-performance/queries";
+import { type NextRequest } from "next/server";
 
-export async function GET(
-  request: Request,
-  { params }: GetBankingPerformancesIdRequest
-) {
-  const { documentId } = await params;
-  console.log("Document ID:", documentId);
+export async function GET(request: NextRequest) {
+  const searchParams = request.nextUrl.searchParams;
+  const quarte = searchParams.get("quarte");
+  console.log(`Quarter: ${quarte}... 👀🔍`);
 
-  if (!documentId) {
+  if (!quarte) {
     return new Response("Missing documentId", { status: 400 });
   }
 
@@ -18,7 +16,7 @@ export async function GET(
     return new Response("Unauthorized", { status: 401 });
   }
 
-  const documents = await getDocumentById({ id: documentId });
+  const documents = await getDocumentByQuarter({ quarterName: quarte });
 
   if (!documents) {
     return new Response("Not found", { status: 404 });

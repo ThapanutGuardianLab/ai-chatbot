@@ -1,26 +1,85 @@
+import { bankingPerformances, financialPerformances } from "./../schema";
+import { quartersInYear } from "date-fns/constants";
 import "server-only";
 
-import { desc, eq } from "drizzle-orm";
+import {
+  cosineDistance,
+  desc,
+  eq,
+  inArray,
+  like,
+  sql,
+  gt,
+  and,
+} from "drizzle-orm";
 import { drizzle } from "drizzle-orm/postgres-js";
 import postgres from "postgres";
 
-import { bankingPerformances } from "../schema";
-import { generateEmbeddings } from "@/lib/ai/embedding";
+import { generateEmbedding, generateEmbeddings } from "@/lib/ai/embedding";
+import {
+  GetSimilarityQuarterRequest,
+  GetSimilarityQuarterResponse,
+} from "@/types/db/banking-performance";
 
 const client = postgres(process.env.POSTGRES_URL!);
 const db = drizzle(client);
 
-export async function getDocumentById({ id }: { id: string }) {
+export async function getDocumentByQuarter({
+  quarterName,
+}: {
+  quarterName: string;
+}) {
   try {
+    const normalizedQuarterName = quarterName.toUpperCase();
     const [selectedDocument] = await db
       .select()
       .from(bankingPerformances)
-      .where(eq(bankingPerformances.id, id))
+      .where(eq(bankingPerformances.quarter, normalizedQuarterName))
       .orderBy(desc(bankingPerformances.createdAt));
 
     return selectedDocument;
   } catch (error) {
     console.error("Failed to get document by id from database");
+    throw error;
+  }
+}
+
+export async function getDocumentAllByQuarter({
+  quarterName,
+}: {
+  quarterName: string;
+}): Promise<Array<typeof bankingPerformances.$inferSelect> | undefined> {
+  try {
+    const normalizedQuarterName = quarterName.toUpperCase();
+    const allDocuments = await db
+      .select()
+      .from(bankingPerformances)
+      .where(like(bankingPerformances.quarter, normalizedQuarterName))
+      .orderBy(desc(bankingPerformances.createdAt));
+
+    return allDocuments;
+  } catch (error) {
+    console.error("Failed to get document all by id from database");
+    throw error;
+  }
+}
+
+export async function getDocumentByQuarters({
+  quartersInYears,
+}: {
+  quartersInYears: Array<string>;
+}) {
+  try {
+    const normalizedQuarters = quartersInYears.map((q) => q.toUpperCase());
+    const documents = await db
+      .select()
+      .from(bankingPerformances)
+      .where(inArray(bankingPerformances.quarter, normalizedQuarters))
+      .orderBy(desc(bankingPerformances.createdAt));
+
+    return documents;
+  } catch (error) {
+    console.error("Failed to get documents by quarters from database", error);
     throw error;
   }
 }
@@ -43,25 +102,50 @@ export async function insertDocumentWithEmbeddings(
   }
 }
 
-/* export const findRelevantContent = async ({
-  userQuery,
-  similarity = 0.5,
-  k = 4,
-}: {
-  userQuery: string;
-  similarity?: number;
-  k?: number;
-}) => {
-  const userQueryEmbedded = await generateEmbedding(userQuery);
-  const similaritySQL = sql<number>`1 - (${cosineDistance(
-    bankingPerformanceEmbeddings.embedding,
-    userQueryEmbedded
-  )})`;
-  const similarGuides = await db
-    .select({ name: bankingPerformanceEmbeddings.content, similaritySQL })
-    .from(bankingPerformanceEmbeddings)
-    .where(gt(similaritySQL, similarity))
-    .orderBy((t) => desc(t.similaritySQL))
-    .limit(k);
-  return similarGuides;
-}; */
+export async function getSimilarityQuarter({
+  question,
+  quartersInYear,
+  limit = 4,
+  similarityThreshold = 0.5,
+}: GetSimilarityQuarterRequest): Promise<GetSimilarityQuarterResponse> {
+  try {
+    console.log(
+      "-------------- Calling getSimilarityQuarter... 🔍 --------------"
+    );
+
+    const normalizedQuestion = question.toUpperCase();
+    const questionEmbedded = await generateEmbedding(normalizedQuestion);
+
+    console.log("Question : ", question);
+    console.log("Quarter: ", quartersInYear);
+
+    const similarity = sql<number>`1 - (${cosineDistance(
+      bankingPerformances.embedding,
+      questionEmbedded
+    )})`;
+
+    const similarGuides = await db
+      .select({
+        quarter: bankingPerformances.quarter,
+        content: bankingPerformances!.content,
+        similarity,
+      })
+      .from(bankingPerformances)
+      .where(
+        and(
+          eq(bankingPerformances.quarter, quartersInYear),
+          gt(similarity, similarityThreshold)
+        )
+      )
+      .orderBy((t) => desc(t.similarity))
+      .limit(limit);
+
+    console.log(
+      "-------------- Called getSimilarityQuarter successfully! ✅ --------------"
+    );
+    return similarGuides;
+  } catch (error) {
+    console.error("Failed to get similar quarters from database", error);
+    throw error;
+  }
+}

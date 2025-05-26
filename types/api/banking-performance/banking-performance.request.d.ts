@@ -1,3 +1,3 @@
 export type GetBankingPerformancesIdRequest = {
-  params: Promise<{ documentId: string }>;
+  params: Promise<{ quarterName: string }>;
 };

@@ -119,7 +119,6 @@ export default function Page() {
     return (
       <div className=" flex flex-col h-screen items-center justify-center w-full p-3">
         <div className="w-full flex items-center gap-6 mb-4">
-          {quarter}
           <Label className="text-lg font-bold mb-2" htmlFor="quarterYear">
             Quarter/Year
           </Label>
@@ -195,9 +194,10 @@ export default function Page() {
   };
 
   return (
-    <div className="grid grid-cols-2 gap-1">
+    <div className="flex flex-col h-screen items-center justify-center w-full p-3 gap-4">
+      {/* <div className="grid grid-cols-2 gap-1"> */}
       <Content1 />
-      <Content2 />
+      {/* <Content2 /> */}
     </div>
   );
 }
