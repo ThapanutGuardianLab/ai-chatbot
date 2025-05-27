@@ -5,6 +5,7 @@ import { Card } from "@/components/ui/card";
 import { Textarea } from "@/components/ui/textarea";
 import { useChat } from "@ai-sdk/react";
 import { Bot, Database, Loader, LucideRocket, UserRound } from "lucide-react";
+import { useEffect, useRef } from "react";
 
 import { toast } from "sonner";
 export default function Page() {
@@ -19,6 +20,19 @@ export default function Page() {
     api: "faq/api/chat",
     maxSteps: 2,
   });
+
+  const bottomRef = useRef<HTMLDivElement | null>(null);
+  const messageRef = useRef<HTMLDivElement | null>(null);
+  const containerRef = useRef<HTMLDivElement | null>(null);
+
+  useEffect(() => {
+    if (containerRef.current) {
+      bottomRef.current?.scrollIntoView({ behavior: "smooth" });
+
+      containerRef.current.scrollTop = containerRef.current.scrollHeight;
+    }
+    bottomRef.current?.scrollIntoView({ behavior: "auto" });
+  }, [messages]);
 
   const Loader = () => {
     return (
@@ -63,7 +77,10 @@ export default function Page() {
   };
   const MessageContent = () => {
     return (
-      <div className="space-y-4 overflow-y-scroll max-h-[calc(100%-110px)]">
+      <div
+        className="space-y-4 overflow-y-scroll max-h-[calc(100%-110px)]"
+        ref={messageRef}
+      >
         {messages.map((m) => (
           <div key={m.id} className="whitespace-pre-wrap">
             <div
@@ -90,12 +107,16 @@ export default function Page() {
             </div>
           </div>
         ))}
+        <div ref={bottomRef} />
       </div>
     );
   };
 
   return (
-    <div className="flex flex-col w-full max-w-2xl pt-8 mx-auto h-screen relative">
+    <div
+      className="flex flex-col w-full max-w-2xl pt-8 mx-auto h-screen relative"
+      ref={containerRef}
+    >
       <MessageContent />
       <div className="fixed bottom-0 w-full max-w-2xl">
         <div className="relative">
