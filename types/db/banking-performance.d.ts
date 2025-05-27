@@ -9,6 +9,13 @@ export type GetSimilarityQuarterRequest = {
   similarityThreshold?: number;
 };
 
+export type GetSimilarityQuartersRequest = {
+  question: string;
+  quartersInYears: Array<string>;
+  limit?: number;
+  similarityThreshold?: number;
+};
+
 export type GetSimilarityQuarterResponse = {
   quarter: string;
   similarity: number;
