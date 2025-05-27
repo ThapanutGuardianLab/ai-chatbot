@@ -1,11 +1,10 @@
 import { streamText, tool } from "ai";
 import { z } from "zod";
 import { myProvider } from "@/lib/ai/providers";
-import { quartersToYears } from "date-fns";
-import { quartersInYear } from "date-fns/constants";
 import {
   getFinancialPerformanceByQuarter,
-  getSimilarityQuarter,
+  getFinancialPerformanceMultiQuarter,
+  getSimilarityMultiQuarter,
 } from "@/lib/db/banking-performance/queries";
 
 export const maxDuration = 30;
@@ -53,14 +52,14 @@ export async function POST(req: Request) {
 
 # Example 1
 ## User
-Can you tell me about Operating results for the first quarter of 2026?
+Can you tell me about Operating results for the first quarter of 2024 and the first quarter of 2025?
 
 ## Assistant Response 1
 ### Message
 "Hi, how can I help you? 😊🎉\n\nYou'd like to know about Operating results for the first quarter of 2026 🤝 Let me check that for you—one moment, please. 🚀"
 
 ### Tool Calls
-getQuarterlyPerformance(question="Can you tell me about Operating results", quarter="Q1/26")
+getQuarterlyPerformance(question="Can you tell me about Operating results", quartersInYears=["Q1/24", "Q1/25"]);
 
 // After tool call, the assistant would follow up with:
 
@@ -70,14 +69,14 @@ getQuarterlyPerformance(question="Can you tell me about Operating results", quar
 
 ## Example 2
 ## User
-Can you tell me about the financial performance for the second quarter of 2026?
+How are the operating results for the first quarter of 2024 and the first quarter of 2025 ?
 
 ## Assistant Response 1
 ### Message
 "Hi, how can I help you? 😊🎉\n\nYou'd like to know about the financial performance of the bank in 2025 🤝 Let me check that for you—one moment, please. 🚀"
 
 ### Tool Calls
-getFinancialPerformance(question="Q2/26")
+getFinancialPerformance(quarterInYears=["Q1/24", "Q1/25"])
 
 // After tool call, the assistant would follow up with:
 
@@ -99,55 +98,29 @@ getFinancialPerformance(question="Q2/26")
             .describe(
               "The user's natural language question about economic outlook or banking performance, e.g., 'Tell me about Operating results for the first quarter of 2025?'"
             ),
-          quartersInYear: z
-            .string()
-            .describe(
-              "Quarter and year in the format 'Q#/YY', e.g., 'Q1/26' for the first quarter of 2026."
-            ),
-        }),
-        execute: async ({ question, quartersInYear }) => {
-          console.log(`Fetching quarterly performance 📈`);
-
-          return await getSimilarityQuarter({ question, quartersInYear });
-        },
-      }),
-      getFinancialPerformance: tool({
-        description: `Tool to get Financial Performance from your knowledge base to answer questions.`,
-        parameters: z.object({
-          /* question: z
-            .string()
-            .describe(
-              "The user's natural language question about financial performance, e.g., 'What is the financial performance for Q2/26?'"
-            ), */
-          quartersInYear: z
-            .string()
-            .describe(
-              "Quarter and year in the format 'Q#/YY', e.g., 'Q1/26' for the first quarter of 2026."
-            ),
-        }),
-        execute: async ({ /* question,  */ quartersInYear }) => {
-          console.log(`Fetching financial performance 💰... 👀🔍`);
-          /* console.log(`Question 🏦 : ${question}`); */
-          console.log(`Quarter 🗓️: ${quartersInYear}`);
-
-          return await getFinancialPerformanceByQuarter({ quartersInYear });
-        },
-      }),
-      getMultiYearFinancialPerformance: tool({
-        description: `Tool to get multi-year Financial Performance from your knowledge base to answer questions across different years.`,
-        parameters: z.object({
           quartersInYears: z
             .array(z.string())
             .describe(
               "List of quarter-year values in the format 'Q#/YY', e.g., ['Q1/25', 'Q2/25', 'Q1/26']."
             ),
         }),
-        execute: async ({ quartersInYears }) => {
-          console.log(
-            `Fetching multi-year financial performance 📊 for ${quartersInYears.join(
-              ", "
-            )}... 👀🔍`
-          );
+        execute: async ({ question, quartersInYears }) => {
+          console.log(`Fetching quarterly performance 📈 🔍`);
+          return await getSimilarityMultiQuarter({ question, quartersInYears });
+        },
+      }),
+      getFinancialPerformance: tool({
+        description: `Tool to get Financial Performance from your knowledge base to answer questions.`,
+        parameters: z.object({
+          quarterInYears: z
+            .array(z.string())
+            .describe(
+              "List of quarter-year values in the format 'Q#/YY', e.g., ['Q1/25', 'Q2/25', 'Q1/26']."
+            ),
+        }),
+        execute: async ({ quarterInYears }) => {
+          console.log(`Fetching financial performance 💰 🔍`);
+          return await getFinancialPerformanceMultiQuarter({ quarterInYears });
         },
       }),
     },

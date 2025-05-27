@@ -18,11 +18,16 @@ export type GetSimilarityQuartersRequest = {
 
 export type GetSimilarityQuarterResponse = {
   quarter: string;
+  content: string | null;
   similarity: number;
-}[];
+};
 
 export type GetFinancialPerformanceByQuarterRequest = {
   quartersInYear: string;
+};
+
+export type GetFinancialPerformanceMultiQuarterRequest = {
+  quarterInYears: Array<string>;
 };
 export type GetFinancialPerformanceByQuarterResponse = InferModel<
   typeof financialPerformances
