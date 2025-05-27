@@ -12,6 +12,7 @@ export type GetSimilarityQuarterRequest = {
 export type GetSimilarityQuartersRequest = {
   question: string;
   quartersInYears: Array<string>;
+  controller: AbortController;
   limit?: number;
   similarityThreshold?: number;
 };
@@ -28,6 +29,7 @@ export type GetFinancialPerformanceByQuarterRequest = {
 
 export type GetFinancialPerformanceMultiQuarterRequest = {
   quarterInYears: Array<string>;
+  controller: AbortController;
 };
 export type GetFinancialPerformanceByQuarterResponse = InferModel<
   typeof financialPerformances

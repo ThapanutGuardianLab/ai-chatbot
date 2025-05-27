@@ -42,7 +42,7 @@ export async function getDocumentByQuarter({
 
     return selectedDocument;
   } catch (error) {
-    console.error("Failed to get document by id from database");
+    console.error("Error 🔥 : Failed to get document by id from database");
     throw error;
   }
 }
@@ -62,7 +62,7 @@ export async function getDocumentAllByQuarter({
 
     return allDocuments;
   } catch (error) {
-    console.error("Failed to get document all by id from database");
+    console.error("Error 🔥 : Failed to get document all by id from database");
     throw error;
   }
 }
@@ -82,7 +82,10 @@ export async function getDocumentByQuarters({
 
     return documents;
   } catch (error) {
-    console.error("Failed to get documents by quarters from database", error);
+    console.error(
+      "Error 🔥 : Failed to get documents by quarters from database",
+      error
+    );
     throw error;
   }
 }
@@ -100,7 +103,9 @@ export async function insertDocumentWithEmbeddings(
       }))
     );
   } catch (error) {
-    console.error("Failed to store chunks with embeddings in database");
+    console.error(
+      "Error 🔥 : Failed to store chunks with embeddings in database"
+    );
     throw error;
   }
 }
@@ -152,7 +157,10 @@ export async function getSimilarityQuarter({
     }
     return similarGuides;
   } catch (error) {
-    console.error("Failed to get similar quarters from database", error);
+    console.error(
+      "Error 🔥 : Failed to get similar quarters from database",
+      error
+    );
     throw error;
   }
 }
@@ -160,6 +168,7 @@ export async function getSimilarityQuarter({
 export async function getSimilarityMultiQuarter({
   question,
   quartersInYears,
+  controller,
   limit = 4,
   similarityThreshold = 0.5,
 }: GetSimilarityMultiQuarterRequest): Promise<GetSimilarityQuarterResponse[]> {
@@ -167,7 +176,10 @@ export async function getSimilarityMultiQuarter({
     console.log("-------------- START 🔍 --------------");
 
     if (question.trim() === "" || !quartersInYears.length) {
-      throw new Error("Question is empty. Please provide a valid question.");
+      console.error(
+        "Error 🔥 : Question is empty. Please provide a valid question."
+      );
+      controller.abort();
     }
 
     const normalizedQuestion = question.toUpperCase();
@@ -199,14 +211,21 @@ export async function getSimilarityMultiQuarter({
       .orderBy((t) => desc(t.similarity))
       .limit(limit);
 
+    console.log("Similar Guides ☎️ : ", similarGuides);
+
     if (!similarGuides || similarGuides.length === 0) {
-      console.warn("No similar quarters found for the given query.");
-      return [];
+      console.error(
+        "Error 🔥 : No similar quarters found for the given query."
+      );
+      controller.abort();
     }
     console.log("--------------- END ✅ ---------------");
     return similarGuides;
   } catch (error) {
-    console.error("Failed to get similar quarters from database", error);
+    console.error(
+      "Error 🔥 : Failed to get similar quarters from database",
+      error
+    );
     throw error;
   }
 }
@@ -239,6 +258,7 @@ export async function getFinancialPerformanceByQuarter({
 
 export async function getFinancialPerformanceMultiQuarter({
   quarterInYears,
+  controller,
 }: GetFinancialPerformanceMultiQuarterRequest): Promise<
   GetFinancialPerformanceByQuarterResponse[]
 > {
@@ -246,6 +266,13 @@ export async function getFinancialPerformanceMultiQuarter({
     console.log("-------------- START 🔍 --------------");
 
     const normalizedQuarterInYears = quarterInYears.map((q) => q.toUpperCase());
+
+    if (normalizedQuarterInYears.length === 0) {
+      console.error(
+        "Error 🔥 : No quarters provided. Please provide valid quarters."
+      );
+      controller.abort();
+    }
 
     console.log("QuarterInYears 👀 : ", normalizedQuarterInYears);
 
@@ -255,10 +282,12 @@ export async function getFinancialPerformanceMultiQuarter({
       .where(inArray(financialPerformances.quarter, normalizedQuarterInYears))
       .orderBy(desc(financialPerformances.createdAt));
     if (!selectedDocument) {
-      console.warn(
-        `No financial performance data found for quarter: ${quarterInYears}`
+      console.error(
+        `No financial performance data found for quarter: ${quarterInYears.join(
+          ","
+        )}`
       );
-      return [];
+      controller.abort();
     }
     console.log("--------------- END ✅ ---------------");
     return selectedDocument;
