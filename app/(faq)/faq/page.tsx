@@ -18,7 +18,7 @@ export default function Page() {
     status,
   } = useChat({
     api: "faq/api/chat",
-    maxSteps: 2,
+    maxSteps: 4,
   });
 
   const bottomRef = useRef<HTMLDivElement | null>(null);
@@ -27,11 +27,11 @@ export default function Page() {
 
   useEffect(() => {
     if (containerRef.current) {
-      bottomRef.current?.scrollIntoView({ behavior: "smooth" });
+      // bottomRef.current?.scrollIntoView({ behavior: "smooth" });
 
       containerRef.current.scrollTop = containerRef.current.scrollHeight;
     }
-    bottomRef.current?.scrollIntoView({ behavior: "auto" });
+    // bottomRef.current?.scrollIntoView({ behavior: "auto" });
   }, [messages]);
 
   const Loader = () => {
@@ -84,7 +84,7 @@ export default function Page() {
         {messages.map((m) => (
           <div key={m.id} className="whitespace-pre-wrap">
             <div
-              className={`flex items-center gap-2 ${
+              className={`flex items-start gap-2 ${
                 m.role === "user" ? "justify-end" : "justify-start"
               }`}
             >
