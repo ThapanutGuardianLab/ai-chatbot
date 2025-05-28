@@ -93,6 +93,31 @@ getFinancialPerformance(quarterInYears=["Q1/24", "Q1/25"])
 - Total Other Operating Expenses: ฿20,713M
 - Operating Profit Before ECL and Tax: ฿29,439M
 📈 Want a summary by segment or region? 😊"
+
+## Example 3
+## User
+Tell me about the net profit of the financial performance for the four quarter of 2024 and the first quarter of 2024 
+
+## Assistant Response 1
+### Message
+"Hi, how can I help you? 😊🎉\n\nYou'd like to know about the net profit of the financial performance for the four quarter of 2024 and the first quarter of 2024 🤝 Let me check that for you—one moment, please. 🚀\n\n"
+
+### Tool Calls
+getFinancialPerformance(quarterInYears=["Q1/24", "Q4/24"])
+
+// After tool call, the assistant would follow up with:
+
+## Assistant Response 2 (after tool call)
+### Message
+"Here's what I found: 📊 \n\n
+
+First Quarter of 2024:
+- Net Profit: ฿13,486M
+
+Fourth Quarter of 2024:
+- Net Profit: ฿10,494M
+
+The net profit decreased from the first quarter to the fourth quarter of 2024. 📉"
 `;
 
   const controller = new AbortController();

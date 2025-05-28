@@ -4,7 +4,6 @@ import { extractTextFromBlob } from "@/utils/parseFile";
 import { z } from "zod";
 import {
   getDocumentAllByQuarter,
-  getDocumentByQuarter,
   insertDocumentWithEmbeddings,
 } from "@/lib/db/banking-performance/queries";
 
@@ -29,7 +28,6 @@ const FileSchema = z.object({
 
 export async function POST(request: Request) {
   const session = await auth();
-  console.log("session 👀 : ", session);
 
   if (!session)
     return NextResponse.json({ error: "Unauthorized" }, { status: 401 });
@@ -61,7 +59,8 @@ export async function POST(request: Request) {
     if (text) {
       const quarterStg = quarter as string;
       await insertDocumentWithEmbeddings(quarterStg, text);
-      return new Response(null, { status: 200 });
+
+      return NextResponse.json(null, { status: 200 });
     } else {
       return NextResponse.json(
         { error: "No text extracted from file" },
