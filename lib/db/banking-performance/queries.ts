@@ -211,8 +211,6 @@ export async function getSimilarityMultiQuarter({
       .orderBy((t) => desc(t.similarity))
       .limit(limit);
 
-    console.log("Similar Guides ☎️ : ", similarGuides);
-
     if (!similarGuides || similarGuides.length === 0) {
       console.error(
         "Error 🔥 : No similar quarters found for the given query."
