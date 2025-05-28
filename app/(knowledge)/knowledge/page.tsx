@@ -47,7 +47,10 @@ export default function Page() {
   };
 
   const handleUpload = () => {
-    if (!selectedFile) return;
+    if (!selectedFile || quarter.length === 0) {
+      toast.error("Something is wrong!!");
+      return;
+    }
     setLoading(true);
 
     const formData = new FormData();
@@ -76,6 +79,7 @@ export default function Page() {
       .finally(() => {
         setLoading(false);
         setSelectedFile(null);
+        setQuarter("");
         if (fileInputRef.current) fileInputRef.current.value = "";
       });
   };
@@ -125,6 +129,7 @@ export default function Page() {
           <input
             onBlur={(e) => setQuarter(formatValue(e.target.value))}
             defaultValue={quarter}
+            disabled={loading}
             ref={inputRef}
             placeholder="Qx/xx"
             className="border p-2 rounded-xl w-32"
@@ -154,7 +159,7 @@ export default function Page() {
             </p>
           </div>
           <Button
-            disabled={!selectedFile}
+            disabled={!selectedFile || loading}
             className={`absolute top-4 right-4 ${
               !selectedFile ? "!cursor-not-allowed" : "!cursor-pointer"
             }`}
@@ -170,7 +175,7 @@ export default function Page() {
         </div>
         <Button
           onClick={handleUpload}
-          disabled={!selectedFile || loading}
+          disabled={!selectedFile || loading || !quarter}
           className="mt-4 w-full bg-blue-600 text-white py-2 rounded hover:bg-blue-700 disabled:bg-gray-400"
         >
           {loading ? (
