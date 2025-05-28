@@ -1,5 +1,7 @@
 import { myProvider } from "./providers";
 import { embed, embedMany } from "ai";
+import { SentenceSplitter } from "@llamaindex/core/node-parser";
+
 const embeddingModel = "embedding-model";
 
 const generateChunks = (input: string): string[] => {
@@ -9,10 +11,22 @@ const generateChunks = (input: string): string[] => {
     .filter((i) => i !== "");
 };
 
+export const llamaSentenceChunker = async (
+  input: string,
+  chunkSize: number = 512,
+  chunkOverlap: number = 50
+): Promise<string[]> => {
+  const splitter = new SentenceSplitter({
+    chunkSize,
+    chunkOverlap,
+  });
+  return splitter.splitText(input);
+};
+
 export const generateEmbeddings = async (
   value: string
 ): Promise<Array<{ embedding: number[]; content: string }>> => {
-  const chunks = generateChunks(value);
+  const chunks = await llamaSentenceChunker(value);
   const { embeddings } = await embedMany({
     model: myProvider.textEmbeddingModel(embeddingModel),
     values: chunks,

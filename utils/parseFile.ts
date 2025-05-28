@@ -3,8 +3,8 @@ import mammoth from "mammoth";
 
 export async function parsePDF(buffer: Buffer): Promise<string> {
   try {
-    console.log("Called parsePDF function ⏳ ✅");
     const data = await pdfParse(buffer);
+    console.log("Called parsePDF function ⏳ ✅");
     return data.text;
   } catch (error) {
     console.error(`Error parsing PDF file ":`, error);
@@ -14,8 +14,8 @@ export async function parsePDF(buffer: Buffer): Promise<string> {
 
 export async function parseDocx(buffer: Buffer): Promise<string> {
   try {
-    console.log("Called parseDocx function ⏳ ✅");
     const result = await mammoth.extractRawText({ buffer });
+    console.log("Called parseDocx function ⏳ ✅");
     return result.value;
   } catch (error) {
     console.error(`Error parsing DOCX file ":`, error);
@@ -25,8 +25,8 @@ export async function parseDocx(buffer: Buffer): Promise<string> {
 
 export async function parsePlainText(file: Blob): Promise<string> {
   try {
-    console.log("Called parsePlainText function ⏳ ✅");
     const text = await file.text();
+    console.log("Called parsePlainText function ⏳ ✅");
     return text;
   } catch (error) {
     console.error(`Error parsing Plain Text file ":`, error);
