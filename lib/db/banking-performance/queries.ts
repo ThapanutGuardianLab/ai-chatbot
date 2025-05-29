@@ -95,12 +95,18 @@ export async function insertDocumentWithEmbeddings(
   data: string
 ) {
   try {
+    console.log(
+      "-------------- insertDocumentWithEmbeddingV2 START 🔍 --------------"
+    );
     const newEmbeddings = await generateEmbeddings(data);
     await db.insert(bankingPerformances).values(
       newEmbeddings.map((embedding) => ({
         quarter,
         ...embedding,
       }))
+    );
+    console.log(
+      "--------------- insertDocumentWithEmbeddings END ✅ ---------------"
     );
   } catch (error) {
     console.error(
