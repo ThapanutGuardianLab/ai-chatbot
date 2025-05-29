@@ -1,20 +1,14 @@
 "use client";
 
 import { Button } from "@/components/ui/button";
-import { Textarea } from "@/components/ui/textarea";
 import { SymbolIcon, UploadIcon } from "@radix-ui/react-icons";
 import { TrashIcon } from "lucide-react";
 import { useRef, useState } from "react";
 import { toast } from "sonner";
-import { InputMask, useMask } from "@react-input/mask";
 import { Label } from "@radix-ui/react-label";
 
 export default function Page() {
   const fileInputRef = useRef<HTMLInputElement | null>(null);
-  const inputRef = useMask({
-    mask: "Q_/__",
-    replacement: { _: /\d/ },
-  });
   const [dragActive, setDragActive] = useState(false);
   const [quarter, setQuarter] = useState("");
   const [loading, setLoading] = useState(false);
@@ -47,7 +41,7 @@ export default function Page() {
   };
 
   const handleUpload = () => {
-    if (!selectedFile || quarter.length === 0) {
+    if (!selectedFile) {
       toast.error("Something is wrong!!");
       return;
     }
@@ -56,7 +50,6 @@ export default function Page() {
     const formData = new FormData();
 
     formData.append("file", selectedFile);
-    formData.append("quarter", quarter);
 
     fetch("/knowledge/api/upload/banking-performance", {
       method: "POST",
@@ -64,7 +57,7 @@ export default function Page() {
     })
       .then((res) => res.json())
       .then((data) => {
-        if (data.error) {
+        if (data?.error) {
           toast.error(data.error);
           console.error("API error:", data.error);
         } else {
@@ -84,41 +77,6 @@ export default function Page() {
       });
   };
 
-  const formatValue = (value: string): string => {
-    value = value.toUpperCase().replace(/[^Q0-9\/]/g, "");
-
-    if (!value.startsWith("Q")) {
-      value = "Q" + value.replace(/Q/g, "");
-    }
-
-    // Remove duplicate Q's except first
-    value = value.replace(/Q+/g, "Q");
-
-    // Enforce quarter digit 1-4 after Q
-    if (value.length > 1) {
-      const q = value[1];
-      if (!/[1-4]/.test(q)) {
-        value = value.slice(0, 1);
-      }
-    }
-
-    // Insert slash if missing after quarter digit
-    if (value.length === 2 && value[2] !== "/") {
-      value = value + "/";
-    }
-
-    // Fix slash position if needed
-    if (value.length > 2 && value[2] !== "/") {
-      value = value.slice(0, 2) + "/" + value.slice(2);
-    }
-
-    // Limit length to 5 (Qx/yy)
-    if (value.length > 5) {
-      value = value.slice(0, 5);
-    }
-
-    return value;
-  };
   const Content1 = () => {
     return (
       <div className=" flex flex-col h-screen items-center justify-center w-full p-3">
@@ -126,14 +84,6 @@ export default function Page() {
           <Label className="text-lg font-bold mb-2" htmlFor="quarterYear">
             Quarter/Year
           </Label>
-          <input
-            onBlur={(e) => setQuarter(formatValue(e.target.value))}
-            defaultValue={quarter}
-            disabled={loading}
-            ref={inputRef}
-            placeholder="Qx/xx"
-            className="border p-2 rounded-xl w-32"
-          />
         </div>
         <div className="w-full relative">
           <div
@@ -175,7 +125,7 @@ export default function Page() {
         </div>
         <Button
           onClick={handleUpload}
-          disabled={!selectedFile || loading || !quarter}
+          disabled={!selectedFile || loading /* || !quarter */}
           className="mt-4 w-full bg-blue-600 text-white py-2 rounded hover:bg-blue-700 disabled:bg-gray-400"
         >
           {loading ? (
@@ -189,20 +139,9 @@ export default function Page() {
     );
   };
 
-  const Content2 = () => {
-    return (
-      <div className="relative flex flex-col h-screen items-center justify-center w-full bg-slate-200 text-black">
-        {" "}
-        Content 2
-      </div>
-    );
-  };
-
   return (
     <div className="flex flex-col h-screen items-center justify-center w-full p-3 gap-4">
-      {/* <div className="grid grid-cols-2 gap-1"> */}
       <Content1 />
-      {/* <Content2 /> */}
     </div>
   );
 }
