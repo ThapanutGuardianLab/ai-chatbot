@@ -1,11 +1,10 @@
-import { NextRequest, NextResponse } from "next/server";
+import { NextResponse } from "next/server";
 import { auth } from "@/app/(auth)/auth";
 import { extractTextFromBlob } from "@/utils/parseFile";
 import { z } from "zod";
-import {
-  getDocumentAllByQuarter,
-  insertDocumentWithEmbeddings,
-} from "@/lib/db/banking-performance/queries";
+import { insertDocumentWithEmbeddings } from "@/lib/db/banking-performance/queries";
+import { CoreMessage, streamText, tool } from "ai";
+import { myProvider } from "@/lib/ai/providers";
 
 const FileSchema = z.object({
   file: z
@@ -27,6 +26,8 @@ const FileSchema = z.object({
 });
 
 export async function POST(request: Request) {
+  console.log("Calling upload knowledge... 🔍👀");
+
   const session = await auth();
 
   if (!session)
@@ -34,14 +35,9 @@ export async function POST(request: Request) {
 
   const formData = await request.formData();
   const file = formData.get("file");
-  const quarter = formData.get("quarter");
 
   if (!(file instanceof Blob)) {
     return NextResponse.json({ error: "No file uploaded" }, { status: 400 });
-  }
-
-  if (quarter === null || quarter === undefined) {
-    return NextResponse.json({ error: "No quarter provided" }, { status: 400 });
   }
 
   const validation = FileSchema.safeParse({ file });
@@ -53,20 +49,90 @@ export async function POST(request: Request) {
     return NextResponse.json({ error: errorMessage }, { status: 400 });
   }
 
+  const SYS_PROMPT_SERVICE = `You are an intelligent document analysis agent specializing in financial and banking performance. Your task is to efficiently read, extract relevant information, and classify documents while strictly adhering to the provided guidelines.
+
+# Instructions
+- After receiving user data, extract relevant information and always call a tool to save it in the database.
+- Currency used for  data: THB (Thai Baht, ฿).
+
+# Precise document analysis Steps (for each document analysis)
+1. Intelligent document analysis.
+2. Call the tool corresponding to the classified document type.
+
+## Example 1
+## User
+File
+
+### Tool Calls
+insertQuarterlyPerformanceRecord(quarterInYears="Q1/24",companyName="Kasikornbank")
+
+## Example 2
+## User
+File
+
+### Tool Calls
+insertFinancialPerformanceRecord(quarterInYears="Q1/25",companyName="SCB")
+`;
+
   try {
-    const text = await extractTextFromBlob(file, file.name);
+    const fileText = await extractTextFromBlob(file);
+    const messages: CoreMessage[] = [
+      {
+        role: "user",
+        content: `Here is the content from the file :\n\n${fileText}`,
+      },
+    ];
 
-    if (text) {
-      const quarterStg = quarter as string;
-      await insertDocumentWithEmbeddings(quarterStg, text);
-
-      return NextResponse.json(null, { status: 200 });
-    } else {
-      return NextResponse.json(
-        { error: "No text extracted from file" },
-        { status: 400 }
-      );
-    }
+    const result = streamText({
+      model: myProvider.languageModel("chat-model"),
+      system: SYS_PROMPT_SERVICE,
+      messages,
+      tools: {
+        insertQuarterlyPerformanceRecord: tool({
+          description: `Tool for identifying the reporting period (Q#/YY) and company name in Banking Performance documents.`,
+          parameters: z.object({
+            quarterInYear: z
+              .string()
+              .describe(
+                "Quarter and year in the format 'Q#/YY', e.g., 'Q1/26' for the first quarter of 2026."
+              ),
+            companyName: z
+              .string()
+              .describe(
+                "Name of the company referenced in the document, e.g., 'SCB', 'Kasikornbank', or 'PTT Public Company Limited'."
+              ),
+          }),
+          execute: async ({ quarterInYear, companyName }) => {
+            console.log(`Insert : "Banking Performance" 📉 🐙 🔍`);
+            console.log("quarterInYear 🗓️ : ", quarterInYear);
+            console.log("companyName 🏢 : ", companyName);
+            await insertDocumentWithEmbeddings(quarterInYear, fileText);
+          },
+        }),
+        insertFinancialPerformanceRecord: tool({
+          description: `Tool for identifying the reporting period (Q#/YY) and company name in Financial Performances documents.`,
+          parameters: z.object({
+            quarterInYear: z
+              .string()
+              .describe(
+                "Quarter and year in the format 'Q#/YY', e.g., 'Q1/26' for the first quarter of 2026."
+              ),
+            companyName: z
+              .string()
+              .describe(
+                "Name of the company referenced in the document, e.g., 'SCB', 'Kasikornbank', or 'PTT Public Company Limited'."
+              ),
+          }),
+          execute: async ({ quarterInYear, companyName }) => {
+            console.log(`Insert : "Financial Performance" 📈 🪼 🔍`);
+            console.log("quarterInYear 🗓️ : ", quarterInYear);
+            console.log("companyName 🏢 : ", companyName);
+          },
+        }),
+      },
+    });
+    console.log("result 🔥 :: ", result);
+    return NextResponse.json(null, { status: 200 });
   } catch (error) {
     console.error("Error from pdf-parse:", error);
     return NextResponse.json(
@@ -74,27 +140,4 @@ export async function POST(request: Request) {
       { status: 500 }
     );
   }
-}
-
-export async function GET(request: NextRequest) {
-  const searchParams = request.nextUrl.searchParams;
-  const quarte = searchParams.get("quarte");
-  console.log(`Quarter: ${quarte}... 👀🔍`);
-
-  if (!quarte) {
-    return new Response("Missing documentId", { status: 400 });
-  }
-
-  const session = await auth();
-  if (!session?.user?.id) {
-    return new Response("Unauthorized", { status: 401 });
-  }
-
-  const documents = await getDocumentAllByQuarter({ quarterName: quarte });
-
-  if (!documents) {
-    return new Response("Not found", { status: 404 });
-  }
-
-  return Response.json(documents, { status: 200 });
 }
