@@ -34,19 +34,16 @@ export async function parsePlainText(file: Blob): Promise<string> {
   }
 }
 
-export async function extractTextFromBlob(
-  file: Blob,
-  filename: string
-): Promise<string> {
+export async function extractTextFromBlob(file: File): Promise<string> {
   const buffer = Buffer.from(await file.arrayBuffer());
 
-  if (filename.endsWith(".pdf")) {
+  if (file?.name.endsWith(".pdf")) {
     console.log("Calling parsePDF 📕 function... 👀");
     return await parsePDF(buffer);
-  } else if (filename.endsWith(".docx")) {
+  } else if (file?.name.endsWith(".docx")) {
     console.log("Calling parseDocx 📙 function... 👀");
     return await parseDocx(buffer);
-  } else if (filename.endsWith(".txt")) {
+  } else if (file?.name.endsWith(".txt")) {
     console.log("Calling parsePlainText 📓 function... 👀");
     return await parsePlainText(file);
   } else {
