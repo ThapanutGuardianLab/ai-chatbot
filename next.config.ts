@@ -5,7 +5,7 @@ const nextConfig: NextConfig = {
     config.experiments = {
       asyncWebAssembly: true,
       layers: true,
-      ...config.experiments,
+      ...(config.experiments || {}),
     };
     config.module.rules.push({
       test: /\.wasm$/,
@@ -14,12 +14,14 @@ const nextConfig: NextConfig = {
     return config;
   },
   experimental: {
-    ppr: true,
-    serverComponentsExternalPackages: ["pdf-parse", "mammoth"],
+    // ppr: true,
+    // serverComponentsExternalPackages: ["pdf-parse", "mammoth"],
   },
+  serverExternalPackages: ["pdf-parse", "mammoth"],
   images: {
     remotePatterns: [
       {
+        protocol: "https",
         hostname: "avatar.vercel.sh",
       },
     ],
