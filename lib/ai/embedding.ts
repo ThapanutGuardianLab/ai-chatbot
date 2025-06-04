@@ -1,28 +1,8 @@
 import { myProvider } from "./providers";
 import { embed, embedMany } from "ai";
-import { SentenceSplitter } from "@llamaindex/core/node-parser";
+import { llamaSentenceChunker } from "./chunking";
 
 const embeddingModel = "embedding-model";
-
-const generateChunks = (input: string): string[] => {
-  return input
-    .trim()
-    .split(".")
-    .filter((i) => i !== "");
-};
-
-export const llamaSentenceChunker = async (
-  input: string,
-  chunkSize: number = 512,
-  chunkOverlap: number = 50
-): Promise<string[]> => {
-  const splitter = new SentenceSplitter({
-    chunkSize,
-    chunkOverlap,
-  });
-  return splitter.splitText(input);
-};
-
 export const generateEmbeddings = async (
   value: string
 ): Promise<Array<{ embedding: number[]; content: string }>> => {

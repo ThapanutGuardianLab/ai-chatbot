@@ -1,11 +1,8 @@
 import { streamText, tool } from "ai";
 import { z } from "zod";
 import { myProvider } from "@/lib/ai/providers";
-import {
-  getFinancialPerformanceByQuarter,
-  getFinancialPerformanceMultiQuarter,
-  getSimilarityMultiQuarter,
-} from "@/lib/db/banking-performance/queries";
+import { getSimilarityMultiQuarter } from "@/lib/db/banking-performance/queries";
+import { getFinancialPerformanceMultiQuarter } from "@/lib/db/financial-performance/queries";
 
 export const maxDuration = 30;
 
@@ -119,6 +116,31 @@ Fourth Quarter of 2024:
 - Net Profit: ฿10,494M
 
 The net profit decreased from the first quarter to the fourth quarter of 2024. 📉"
+
+## Example 4
+## User
+Tell me about the operating results for the first quarter of 2024 and net profit of the financial performance for the first quarter of 2025
+
+## Assistant Response 1
+### Message
+"Hi, how can I help you? 😊🎉\n\nYou'd like to know about the operating results for the first quarter of 2024 and net profit of the financial performance for the first quarter of 2025 🤝 Let me check that for you—one moment, please. 🚀\n\n"
+
+### Tool Calls
+getQuarterlyPerformance(question="Tell me about the operating results for the first quarter of 2024", quartersInYears=["Q1/24"]);
+getFinancialPerformance(quarterInYears=["Q1/25"])
+
+// After tool call, the assistant would follow up with:
+
+## Assistant Response 2 (after tool call)
+### Message
+"Here's what I found: 📊 \n\n
+
+In the Operating results for the first quarter of 2025:\n
+our revenue rose by 8% YoY, reaching ฿2.1B, driven by strong growth in digital services and lower operating costs. 
+
+Net profit of the financial performance for the first quarter of 2025:\n
+13,791 million baht.
+"
 `;
 
   const controller = new AbortController();

@@ -1,4 +1,4 @@
-import { bankingPerformances, financialPerformances } from "./../schema";
+import { bankingPerformances } from "./../schema";
 import "server-only";
 
 import {
@@ -16,12 +16,9 @@ import postgres from "postgres";
 
 import { generateEmbedding, generateEmbeddings } from "@/lib/ai/embedding";
 import {
-  GetFinancialPerformanceByQuarterRequest,
-  GetFinancialPerformanceByQuarterResponse,
   GetSimilarityQuarterRequest,
   GetSimilarityQuarterResponse,
   GetSimilarityQuartersRequest as GetSimilarityMultiQuarterRequest,
-  GetFinancialPerformanceMultiQuarterRequest,
 } from "@/types/db/banking-performance";
 
 const client = postgres(process.env.POSTGRES_URL!);
@@ -179,7 +176,9 @@ export async function getSimilarityMultiQuarter({
   similarityThreshold = 0.5,
 }: GetSimilarityMultiQuarterRequest): Promise<GetSimilarityQuarterResponse[]> {
   try {
-    console.log("-------------- START 🔍 --------------");
+    console.log(
+      "-------------- getSimilarityMultiQuarter START 🔍 --------------"
+    );
 
     if (question.trim() === "" || !quartersInYears.length) {
       console.error(
@@ -195,12 +194,27 @@ export async function getSimilarityMultiQuarter({
 
     console.log("Question : ", question);
     console.log("Quarter: ", quartersInYears);
+    console.log("similarityThreshold: ", similarityThreshold);
 
     const similarity = sql<number>`1 - (${cosineDistance(
       bankingPerformances.embedding,
       questionEmbedded
     )})`;
 
+    const data = await db
+      .select({
+        quarter: bankingPerformances.quarter,
+        content: bankingPerformances!.content,
+        similarity,
+      })
+      .from(bankingPerformances)
+      .where(and(inArray(bankingPerformances.quarter, quartersInYears)))
+      .orderBy((t) => desc(t.similarity))
+      .limit(limit);
+
+    console.log("quartersInYears 🐙 : ", quartersInYears);
+    console.log("data 🔍 : ", data.length);
+    console.log("similarityThreshold: ", similarityThreshold);
     const similarGuides = await db
       .select({
         quarter: bankingPerformances.quarter,
@@ -232,79 +246,4 @@ export async function getSimilarityMultiQuarter({
     );
     throw error;
   }
-}
-
-export async function getFinancialPerformanceByQuarter({
-  quartersInYear,
-}: GetFinancialPerformanceByQuarterRequest): Promise<GetFinancialPerformanceByQuarterResponse> {
-  try {
-    const normalizedQuarterInYear = quartersInYear.toUpperCase();
-    const [selectedDocument] = await db
-      .select()
-      .from(financialPerformances)
-      .where(eq(financialPerformances.quarter, normalizedQuarterInYear))
-      .orderBy(desc(financialPerformances.createdAt));
-    if (!selectedDocument) {
-      console.warn(
-        `No financial performance data found for quarter: ${quartersInYear}`
-      );
-      return null;
-    }
-
-    return selectedDocument;
-  } catch (error) {
-    console.error(
-      "Failed to get financial performance by quarter from database"
-    );
-    throw error;
-  }
-}
-
-export async function getFinancialPerformanceMultiQuarter({
-  quarterInYears,
-  controller,
-}: GetFinancialPerformanceMultiQuarterRequest): Promise<
-  GetFinancialPerformanceByQuarterResponse[]
-> {
-  try {
-    console.log("-------------- START 🔍 --------------");
-
-    const normalizedQuarterInYears = quarterInYears.map((q) => q.toUpperCase());
-
-    if (normalizedQuarterInYears.length === 0) {
-      console.error(
-        "Error 🔥 : No quarters provided. Please provide valid quarters."
-      );
-      controller.abort();
-    }
-
-    console.log("QuarterInYears 👀 : ", normalizedQuarterInYears);
-
-    const selectedDocument = await db
-      .select()
-      .from(financialPerformances)
-      .where(inArray(financialPerformances.quarter, normalizedQuarterInYears))
-      .orderBy(desc(financialPerformances.createdAt));
-    if (!selectedDocument) {
-      console.error(
-        `No financial performance data found for quarter: ${quarterInYears.join(
-          ","
-        )}`
-      );
-      controller.abort();
-    }
-    console.log("--------------- END ✅ ---------------");
-    return selectedDocument;
-  } catch (error) {
-    console.error(
-      "Failed to get financial performance by quarter from database"
-    );
-    throw error;
-  }
-}
-
-export async function getSimilarityMultiYearQuarter() {
-  // This function is a placeholder for future implementation
-  // It should handle multiple years and return similar quarters
-  throw new Error("getSimilarityMultiYearQuarter is not implemented yet.");
 }

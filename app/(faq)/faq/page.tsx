@@ -4,7 +4,7 @@ import { SendButton, StopButton } from "@/components/multimodal-input";
 import { Card } from "@/components/ui/card";
 import { Textarea } from "@/components/ui/textarea";
 import { useChat } from "@ai-sdk/react";
-import { Bot, Database, Loader, LucideRocket, UserRound } from "lucide-react";
+import { Bot, Database, LucideRocket, UserRound } from "lucide-react";
 import { useEffect, useRef } from "react";
 
 import { toast } from "sonner";
@@ -21,18 +21,13 @@ export default function Page() {
     maxSteps: 4,
   });
 
-  const bottomRef = useRef<HTMLDivElement | null>(null);
-  const messageRef = useRef<HTMLDivElement | null>(null);
-  const containerRef = useRef<HTMLDivElement | null>(null);
+  // const containerRef = useRef<HTMLDivElement | null>(null);
 
-  useEffect(() => {
+  /* useEffect(() => {
     if (containerRef.current) {
-      // bottomRef.current?.scrollIntoView({ behavior: "smooth" });
-
       containerRef.current.scrollTop = containerRef.current.scrollHeight;
     }
-    // bottomRef.current?.scrollIntoView({ behavior: "auto" });
-  }, [messages]);
+  }, [messages]); */
 
   const Loader = () => {
     return (
@@ -77,10 +72,7 @@ export default function Page() {
   };
   const MessageContent = () => {
     return (
-      <div
-        className="space-y-4 overflow-y-scroll max-h-[calc(100%-110px)]"
-        ref={messageRef}
-      >
+      <div className="space-y-4 overflow-y-scroll max-h-[calc(100%-110px)]">
         {messages.map((m) => (
           <div key={m.id} className="whitespace-pre-wrap">
             <div
@@ -107,16 +99,12 @@ export default function Page() {
             </div>
           </div>
         ))}
-        <div ref={bottomRef} />
       </div>
     );
   };
 
   return (
-    <div
-      className="flex flex-col w-full max-w-2xl pt-8 mx-auto h-screen relative"
-      ref={containerRef}
-    >
+    <div className="flex flex-col w-full max-w-2xl pt-8 mx-auto h-screen relative">
       <MessageContent />
       <div className="fixed bottom-0 w-full max-w-2xl">
         <div className="relative">
