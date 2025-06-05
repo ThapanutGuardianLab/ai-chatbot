@@ -13,8 +13,17 @@ import {
 } from "drizzle-orm";
 import { drizzle } from "drizzle-orm/postgres-js";
 import postgres from "postgres";
+import { Document as LlamaDocument, Metadata } from "@llamaindex/core/schema";
+import {
+  multiMarkdownNodeChunker,
+  multiSentenceChunker,
+} from "@/lib/llamaindex/chunking";
+import { parseFinancialReportToMarkdown } from "@/lib/llamaindex/parse";
 
-import { generateEmbedding, generateTextEmbeddings } from "@/lib/ai/embedding";
+import {
+  generateEmbedding,
+  generateMultiTextEmbeddings,
+} from "@/lib/ai/embedding";
 import {
   GetSimilarityQuarterRequest,
   GetSimilarityQuarterResponse,
@@ -66,13 +75,32 @@ export async function getDocumentAllByQuarter({
 
 export async function insertDocumentWithEmbeddings(
   quarter: string,
-  data: string
+  file: Blob
 ) {
   try {
     console.log(
       "-------------- insertDocumentWithEmbeddingV2 START 🔍 --------------"
     );
-    const newEmbeddings = await generateTextEmbeddings(data);
+    const markdownMultiContent: LlamaDocument<Metadata>[] =
+      await parseFinancialReportToMarkdown(file);
+
+    if (markdownMultiContent.length === 0) {
+      return Response.json(
+        {
+          error: "Something is wrong",
+        },
+        { status: 500 }
+      );
+    }
+    const markdownMultiChunk: string[] =
+      multiMarkdownNodeChunker(markdownMultiContent);
+    const markdownMultiSentence: string[] = await multiSentenceChunker(
+      markdownMultiChunk
+    );
+
+    const newEmbeddings = await generateMultiTextEmbeddings(
+      markdownMultiSentence
+    );
     await db.insert(financialReportEmbedding).values(
       newEmbeddings.map((embedding) => ({
         quarter,

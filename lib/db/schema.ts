@@ -10,6 +10,7 @@ import {
   foreignKey,
   boolean,
   vector,
+  index,
   real,
 } from "drizzle-orm/pg-core";
 
@@ -171,7 +172,7 @@ export const stream = pgTable(
 
 export type Stream = InferSelectModel<typeof stream>;
 
-export const financialReportEmbedding = pgTable("BankingPerformances", {
+export const bankingPerformances = pgTable("BankingPerformances", {
   id: uuid("id").primaryKey().notNull().defaultRandom(),
   quarter: text("quarter").notNull(),
   content: text("content"),
@@ -179,9 +180,7 @@ export const financialReportEmbedding = pgTable("BankingPerformances", {
   createdAt: timestamp("createdAt").notNull().defaultNow(),
 });
 
-export type BankingPerformances = InferSelectModel<
-  typeof financialReportEmbedding
->;
+export type BankingPerformances = InferSelectModel<typeof bankingPerformances>;
 
 export const financialPerformances = pgTable("FinancialPerformances", {
   id: uuid("id").primaryKey().notNull().defaultRandom(),

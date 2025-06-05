@@ -5,9 +5,9 @@ import { Card } from "@/components/ui/card";
 import { Textarea } from "@/components/ui/textarea";
 import { useChat } from "@ai-sdk/react";
 import { Bot, Database, LucideRocket, UserRound } from "lucide-react";
-import { useEffect, useRef } from "react";
-
 import { toast } from "sonner";
+import { useRef, useEffect } from "react";
+
 export default function Page() {
   const {
     messages,
@@ -16,18 +16,20 @@ export default function Page() {
     handleInputChange,
     handleSubmit,
     status,
+    stop,
   } = useChat({
     api: "faq/api/chat",
     maxSteps: 4,
   });
 
-  // const containerRef = useRef<HTMLDivElement | null>(null);
+  const scrollContainerRef = useRef<HTMLDivElement>(null);
 
-  /* useEffect(() => {
-    if (containerRef.current) {
-      containerRef.current.scrollTop = containerRef.current.scrollHeight;
+  useEffect(() => {
+    const container = scrollContainerRef.current;
+    if (container) {
+      container.scrollTop = container.scrollHeight;
     }
-  }, [messages]); */
+  }, [messages]);
 
   const Loader = () => {
     return (
@@ -45,7 +47,6 @@ export default function Page() {
         {status === "submitted" ? (
           <StopButton stop={stop} setMessages={setMessages} />
         ) : (
-          // eslint-disable-next-line react/jsx-no-undef
           <SendButton
             input={input}
             submitForm={handleSubmit}
@@ -70,9 +71,14 @@ export default function Page() {
       </Card>
     );
   };
+
   const MessageContent = () => {
     return (
-      <div className="space-y-4 overflow-y-scroll max-h-[calc(100%-110px)]">
+      // ผูก ref เข้ากับ div นี้
+      <div
+        ref={scrollContainerRef}
+        className="space-y-4 overflow-y-scroll max-h-[calc(100%-110px)]"
+      >
         {messages.map((m) => (
           <div key={m.id} className="whitespace-pre-wrap">
             <div
@@ -89,7 +95,7 @@ export default function Page() {
                     <span className="flex items-center gap-2">
                       <Loader />
                       <span className="italic font-light">
-                        {"calling tool: " + m?.toolInvocations?.[0].toolName}
+                        {"calling tool: " + m?.toolInvocations?.[0]?.toolName}
                       </span>
                     </span>
                   )}

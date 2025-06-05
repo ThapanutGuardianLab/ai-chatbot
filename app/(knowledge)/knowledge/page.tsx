@@ -51,7 +51,7 @@ export default function Page() {
 
     formData.append("file", selectedFile);
 
-    fetch("/knowledge/api/upload", {
+    fetch("/knowledge/api/upload/financial-report-emb", {
       method: "POST",
       body: formData,
     })
@@ -80,11 +80,6 @@ export default function Page() {
   const Content1 = () => {
     return (
       <div className=" flex flex-col h-screen items-center justify-center w-full p-3">
-        <div className="w-full flex items-center gap-6 mb-4">
-          <Label className="text-lg font-bold mb-2" htmlFor="quarterYear">
-            Quarter/Year
-          </Label>
-        </div>
         <div className="w-full relative">
           <div
             onDragOver={handleDragOver}
