@@ -36,7 +36,7 @@ import type { ArtifactKind } from "@/components/artifact";
 import { generateUUID } from "../utils";
 import { generateHashedPassword } from "./utils";
 import type { VisibilityType } from "@/components/visibility-selector";
-import { generateEmbedding, generateEmbeddings } from "../ai/embedding";
+import { generateEmbedding, generateTextEmbeddings } from "../ai/embedding";
 
 // Optionally, if not using email/pass login, you can
 // use the Drizzle adapter for Auth.js / NextAuth

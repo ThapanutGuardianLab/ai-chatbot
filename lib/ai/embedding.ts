@@ -1,12 +1,23 @@
 import { myProvider } from "./providers";
 import { embed, embedMany } from "ai";
-import { llamaSentenceChunker } from "./chunking";
+import { multiSentenceChunker, sentenceChunker } from "../llamaindex/chunking";
 
 const embeddingModel = "embedding-model";
-export const generateEmbeddings = async (
+export const generateTextEmbeddings = async (
   value: string
 ): Promise<Array<{ embedding: number[]; content: string }>> => {
-  const chunks = await llamaSentenceChunker(value);
+  const chunks = await sentenceChunker(value);
+  const { embeddings } = await embedMany({
+    model: myProvider.textEmbeddingModel(embeddingModel),
+    values: chunks,
+  });
+  return embeddings.map((e, i) => ({ content: chunks[i], embedding: e }));
+};
+
+export const generateMultiTextEmbeddings = async (
+  value: string[]
+): Promise<Array<{ embedding: number[]; content: string }>> => {
+  const chunks = await multiSentenceChunker(value);
   const { embeddings } = await embedMany({
     model: myProvider.textEmbeddingModel(embeddingModel),
     values: chunks,

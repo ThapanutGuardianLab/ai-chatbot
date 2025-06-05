@@ -1,5 +1,5 @@
 import type { NextConfig } from "next";
-
+import withLlamaIndex from "llamaindex/next";
 const nextConfig: NextConfig = {
   webpack(config) {
     config.experiments = {
@@ -28,4 +28,5 @@ const nextConfig: NextConfig = {
   },
 };
 
-export default nextConfig;
+// export default nextConfig;
+export default withLlamaIndex(nextConfig);

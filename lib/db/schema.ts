@@ -10,10 +10,8 @@ import {
   foreignKey,
   boolean,
   vector,
-  index,
   real,
 } from "drizzle-orm/pg-core";
-import { createSelectSchema } from "drizzle-zod";
 
 export const user = pgTable("User", {
   id: uuid("id").primaryKey().notNull().defaultRandom(),
@@ -173,7 +171,7 @@ export const stream = pgTable(
 
 export type Stream = InferSelectModel<typeof stream>;
 
-export const bankingPerformances = pgTable("BankingPerformances", {
+export const financialReportEmbedding = pgTable("BankingPerformances", {
   id: uuid("id").primaryKey().notNull().defaultRandom(),
   quarter: text("quarter").notNull(),
   content: text("content"),
@@ -181,7 +179,9 @@ export const bankingPerformances = pgTable("BankingPerformances", {
   createdAt: timestamp("createdAt").notNull().defaultNow(),
 });
 
-export type BankingPerformances = InferSelectModel<typeof bankingPerformances>;
+export type BankingPerformances = InferSelectModel<
+  typeof financialReportEmbedding
+>;
 
 export const financialPerformances = pgTable("FinancialPerformances", {
   id: uuid("id").primaryKey().notNull().defaultRandom(),
@@ -205,3 +205,24 @@ export const financialPerformances = pgTable("FinancialPerformances", {
 export type FinancialPerformances = InferSelectModel<
   typeof financialPerformances
 >;
+
+export const financialReportEmbedding = pgTable("FinancialReportEmbedding", {
+  id: uuid("id").primaryKey().notNull().defaultRandom(),
+  quarter: text("quarter").notNull(),
+  content: text("content"),
+  embedding: vector("embedding", { dimensions: 1536 }).notNull(),
+  createdAt: timestamp("createdAt").notNull().defaultNow(),
+});
+
+export type FinancialReportEmbedding = InferSelectModel<
+  typeof financialReportEmbedding
+>;
+
+export const financialReport = pgTable("FinancialReport", {
+  id: uuid("id").primaryKey().notNull().defaultRandom(),
+  quarter: text("quarter").notNull(),
+  content: text("content"),
+  createdAt: timestamp("createdAt").notNull().defaultNow(),
+});
+
+export type FinancialReport = InferSelectModel<typeof financialReport>;

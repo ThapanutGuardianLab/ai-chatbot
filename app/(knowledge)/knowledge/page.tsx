@@ -51,7 +51,7 @@ export default function Page() {
 
     formData.append("file", selectedFile);
 
-    fetch("/knowledge/api/upload/banking-performance", {
+    fetch("/knowledge/api/upload", {
       method: "POST",
       body: formData,
     })

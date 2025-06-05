@@ -1,6 +1,6 @@
-import { bankingPerformances } from "./../schema";
 import "server-only";
 
+import { financialReportEmbedding } from "../schema";
 import {
   cosineDistance,
   desc,
@@ -33,9 +33,9 @@ export async function getDocumentByQuarter({
     const normalizedQuarterName = quarterName.toUpperCase();
     const [selectedDocument] = await db
       .select()
-      .from(bankingPerformances)
-      .where(eq(bankingPerformances.quarter, normalizedQuarterName))
-      .orderBy(desc(bankingPerformances.createdAt));
+      .from(financialReportEmbedding)
+      .where(eq(financialReportEmbedding.quarter, normalizedQuarterName))
+      .orderBy(desc(financialReportEmbedding.createdAt));
 
     return selectedDocument;
   } catch (error) {
@@ -48,14 +48,14 @@ export async function getDocumentAllByQuarter({
   quarterName,
 }: {
   quarterName: string;
-}): Promise<Array<typeof bankingPerformances.$inferSelect> | undefined> {
+}): Promise<Array<typeof financialReportEmbedding.$inferSelect> | undefined> {
   try {
     const normalizedQuarterName = quarterName.toUpperCase();
     const allDocuments = await db
       .select()
-      .from(bankingPerformances)
-      .where(like(bankingPerformances.quarter, normalizedQuarterName))
-      .orderBy(desc(bankingPerformances.createdAt));
+      .from(financialReportEmbedding)
+      .where(like(financialReportEmbedding.quarter, normalizedQuarterName))
+      .orderBy(desc(financialReportEmbedding.createdAt));
 
     return allDocuments;
   } catch (error) {
@@ -73,7 +73,7 @@ export async function insertDocumentWithEmbeddings(
       "-------------- insertDocumentWithEmbeddingV2 START 🔍 --------------"
     );
     const newEmbeddings = await generateTextEmbeddings(data);
-    await db.insert(bankingPerformances).values(
+    await db.insert(financialReportEmbedding).values(
       newEmbeddings.map((embedding) => ({
         quarter,
         ...embedding,
@@ -110,20 +110,20 @@ export async function getSimilarityQuarter({
     console.log("Quarter: ", quartersInYear);
 
     const similarity = sql<number>`1 - (${cosineDistance(
-      bankingPerformances.embedding,
+      financialReportEmbedding.embedding,
       questionEmbedded
     )})`;
 
     const similarGuides = await db
       .select({
-        quarter: bankingPerformances.quarter,
-        content: bankingPerformances!.content,
+        quarter: financialReportEmbedding.quarter,
+        content: financialReportEmbedding!.content,
         similarity,
       })
-      .from(bankingPerformances)
+      .from(financialReportEmbedding)
       .where(
         and(
-          eq(bankingPerformances.quarter, quartersInYear),
+          eq(financialReportEmbedding.quarter, quartersInYear),
           gt(similarity, similarityThreshold)
         )
       )
@@ -174,18 +174,18 @@ export async function getSimilarityMultiQuarter({
     console.log("similarityThreshold: ", similarityThreshold);
 
     const similarity = sql<number>`1 - (${cosineDistance(
-      bankingPerformances.embedding,
+      financialReportEmbedding.embedding,
       questionEmbedded
     )})`;
 
     const data = await db
       .select({
-        quarter: bankingPerformances.quarter,
-        content: bankingPerformances!.content,
+        quarter: financialReportEmbedding.quarter,
+        content: financialReportEmbedding!.content,
         similarity,
       })
-      .from(bankingPerformances)
-      .where(and(inArray(bankingPerformances.quarter, quartersInYears)))
+      .from(financialReportEmbedding)
+      .where(and(inArray(financialReportEmbedding.quarter, quartersInYears)))
       .orderBy((t) => desc(t.similarity))
       .limit(limit);
 
@@ -194,14 +194,14 @@ export async function getSimilarityMultiQuarter({
     console.log("similarityThreshold: ", similarityThreshold);
     const similarGuides = await db
       .select({
-        quarter: bankingPerformances.quarter,
-        content: bankingPerformances!.content,
+        quarter: financialReportEmbedding.quarter,
+        content: financialReportEmbedding!.content,
         similarity,
       })
-      .from(bankingPerformances)
+      .from(financialReportEmbedding)
       .where(
         and(
-          inArray(bankingPerformances.quarter, quartersInYears),
+          inArray(financialReportEmbedding.quarter, quartersInYears),
           gt(similarity, similarityThreshold)
         )
       )
