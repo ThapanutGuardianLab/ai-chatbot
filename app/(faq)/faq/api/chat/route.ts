@@ -1,7 +1,7 @@
 import { streamText, tool } from "ai";
 import { z } from "zod";
 import { myProvider } from "@/lib/ai/providers";
-import { getSimilarityMultiQuarter } from "@/lib/db/financial-report-embedding/queries";
+import { getSimilarityMultiQuarter } from "@/lib/db/financial-report/queries";
 
 export const maxDuration = 30;
 

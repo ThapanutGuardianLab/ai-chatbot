@@ -4,7 +4,7 @@ import { extractTextFromBlob } from "@/utils/parseFile";
 import { z } from "zod";
 import { CoreMessage, streamText, tool } from "ai";
 import { myProvider } from "@/lib/ai/providers";
-import { insertDocumentWithEmbeddings } from "@/lib/db/financial-report-embedding/queries";
+import { insertDocument } from "@/lib/db/financial-report/queries";
 
 const FileSchema = z.object({
   file: z
@@ -100,7 +100,7 @@ export async function POST(request: Request) {
             console.log(`Insert : "Banking Performance" 📉 🐙 🔍`);
             console.log("quarterInYear 🗓️ : ", quarterInYear);
             console.log("companyName 🏢 : ", companyName);
-            await insertDocumentWithEmbeddings(quarterInYear, file);
+            await insertDocument(quarterInYear, file);
           },
         }),
       },
