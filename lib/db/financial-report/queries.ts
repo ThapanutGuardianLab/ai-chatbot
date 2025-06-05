@@ -97,7 +97,7 @@ export async function insertDocument(quarter: string, file: Blob) {
     await db.insert(financialReport).values(
       chunks.map((chunk) => ({
         quarter,
-        chunk,
+        content: chunk,
       }))
     );
     console.log(
@@ -189,9 +189,6 @@ export async function getSimilarityMultiQuarter({
       );
       controller.abort();
     }
-
-    const normalizedQuestion = question.toUpperCase();
-    const questionEmbedded = await generateEmbedding(normalizedQuestion);
 
     quartersInYears = quartersInYears.map((q) => q.toUpperCase());
 
