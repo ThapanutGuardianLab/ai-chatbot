@@ -22,15 +22,6 @@ export default function Page() {
     maxSteps: 4,
   });
 
-  const scrollContainerRef = useRef<HTMLDivElement>(null);
-
-  useEffect(() => {
-    const container = scrollContainerRef.current;
-    if (container) {
-      container.scrollTop = container.scrollHeight;
-    }
-  }, [messages]);
-
   const Loader = () => {
     return (
       <span className="flex space-x-1 items-center justify-center">
@@ -74,11 +65,7 @@ export default function Page() {
 
   const MessageContent = () => {
     return (
-      // ผูก ref เข้ากับ div นี้
-      <div
-        ref={scrollContainerRef}
-        className="space-y-4 overflow-y-scroll max-h-[calc(100%-110px)]"
-      >
+      <div className="space-y-4 overflow-y-scroll max-h-[calc(100%-110px)]">
         {messages.map((m) => (
           <div key={m.id} className="whitespace-pre-wrap">
             <div
