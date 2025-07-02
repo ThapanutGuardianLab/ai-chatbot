@@ -3,16 +3,22 @@
 import { Button } from "@/components/ui/button";
 import { SymbolIcon, UploadIcon } from "@radix-ui/react-icons";
 import { TrashIcon } from "lucide-react";
-import { useRef, useState } from "react";
+import { useEffect, useRef, useState } from "react";
 import { toast } from "sonner";
-import { Label } from "@radix-ui/react-label";
+import { useSidebar } from "@/components/ui/sidebar";
 
 export default function Page() {
+  const { setOpenMobile, setOpen } = useSidebar();
   const fileInputRef = useRef<HTMLInputElement | null>(null);
   const [dragActive, setDragActive] = useState(false);
   const [quarter, setQuarter] = useState("");
   const [loading, setLoading] = useState(false);
   const [selectedFile, setSelectedFile] = useState<File | null>(null);
+
+  useEffect(() => {
+    setOpenMobile(false);
+    setOpen(true);
+  }, []);
 
   const handleDragOver = (e: React.DragEvent<HTMLDivElement>) => {
     e.preventDefault();
@@ -51,7 +57,7 @@ export default function Page() {
 
     formData.append("file", selectedFile);
 
-    fetch("/knowledge/api/upload/financial-report-emb", {
+    fetch("/knowledge/api/upload/financial-report", {
       method: "POST",
       body: formData,
     })

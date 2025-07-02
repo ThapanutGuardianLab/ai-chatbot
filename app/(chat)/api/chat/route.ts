@@ -2,8 +2,10 @@ import {
   appendClientMessage,
   appendResponseMessages,
   createDataStream,
+  extractReasoningMiddleware,
   smoothStream,
   streamText,
+  wrapLanguageModel,
 } from "ai";
 import { auth, type UserType } from "@/app/(auth)/auth";
 import { type RequestHints, systemPrompt } from "@/lib/ai/prompts";
@@ -32,8 +34,10 @@ import {
   createResumableStreamContext,
   type ResumableStreamContext,
 } from "resumable-stream";
-import { after } from "next/server";
+import { after, NextResponse } from "next/server";
 import type { Chat } from "@/lib/db/schema";
+import { azure } from "@ai-sdk/azure";
+import { openai } from "@ai-sdk/openai";
 
 export const maxDuration = 60;
 
@@ -79,77 +83,99 @@ export async function POST(request: Request) {
       return new Response("Unauthorized", { status: 401 });
     }
 
-    const userType: UserType = session.user.type;
+    // const userType: UserType = session.user.type;
 
-    const messageCount = await getMessageCountByUserId({
-      id: session.user.id,
-      differenceInHours: 24,
+    // const messageCount = await getMessageCountByUserId({
+    //   id: session.user.id,
+    //   differenceInHours: 24,
+    // });
+
+    // if (messageCount > entitlementsByUserType[userType].maxMessagesPerDay) {
+    //   return new Response(
+    //     "You have exceeded your maximum number of messages for the day! Please try again later.",
+    //     {
+    //       status: 429,
+    //     }
+    //   );
+    // }
+
+    // const chat = await getChatById({ id });
+    // console.log("Chat DB 📮 : ", chat);
+
+    // if (!chat) {
+    //   console.log("Accept new chat ✅");
+
+    //   /* const title = await generateTitleFromUserMessage({
+    //     message,
+    //   }); */
+
+    //   const title = "New Chat";
+
+    //   await saveChat({
+    //     id,
+    //     userId: session.user.id,
+    //     title,
+    //     visibility: selectedVisibilityType,
+    //   });
+    // } else {
+    //   if (chat.userId !== session.user.id) {
+    //     return new Response("Forbidden", { status: 403 });
+    //   }
+    // }
+
+    // const previousMessages = await getMessagesByChatId({ id });
+
+    // const messages = appendClientMessage({
+    //   // @ts-expect-error: todo add type conversion from DBMessage[] to UIMessage[]
+    //   messages: previousMessages,
+    //   message,
+    // });
+
+    // const { longitude, latitude, city, country } = geolocation(request);
+
+    // const requestHints: RequestHints = {
+    //   longitude,
+    //   latitude,
+    //   city,
+    //   country,
+    // };
+
+    // await saveMessages({
+    //   messages: [
+    //     {
+    //       chatId: id,
+    //       id: message.id,
+    //       role: "user",
+    //       parts: message.parts,
+    //       attachments: message.experimental_attachments ?? [],
+    //       createdAt: new Date(),
+    //     },
+    //   ],
+    // });
+
+    // const streamId = generateUUID();
+    // await createStreamId({ streamId, chatId: id });
+    console.log("Chat Model 🧠 : ", selectedChatModel);
+    console.log(
+      "myProvider 📍 : ",
+      myProvider.languageModel(selectedChatModel)
+    );
+
+    const model = wrapLanguageModel({
+      model: openai("gpt-4o-mini"),
+      middleware: extractReasoningMiddleware({ tagName: "think" }),
     });
-
-    if (messageCount > entitlementsByUserType[userType].maxMessagesPerDay) {
-      return new Response(
-        "You have exceeded your maximum number of messages for the day! Please try again later.",
-        {
-          status: 429,
-        }
-      );
-    }
-
-    const chat = await getChatById({ id });
-    console.log("Chat DB 📮 : ", chat);
-
-    if (!chat) {
-      const title = await generateTitleFromUserMessage({
-        message,
-      });
-
-      await saveChat({
-        id,
-        userId: session.user.id,
-        title,
-        visibility: selectedVisibilityType,
-      });
-    } else {
-      if (chat.userId !== session.user.id) {
-        return new Response("Forbidden", { status: 403 });
-      }
-    }
-
-    const previousMessages = await getMessagesByChatId({ id });
-
-    const messages = appendClientMessage({
-      // @ts-expect-error: todo add type conversion from DBMessage[] to UIMessage[]
-      messages: previousMessages,
-      message,
+    const result = streamText({
+      model,
+      messages: [{ role: "user", content: "Why is the sky blue?" }],
+      onFinish(completion) {
+        console.log("🧠 Reasoning:", completion.reasoning);
+        console.log("📝 Final Answer:", completion.text);
+      },
     });
+    console.log("Result from streamText 🪿 : ", result);
 
-    const { longitude, latitude, city, country } = geolocation(request);
-
-    const requestHints: RequestHints = {
-      longitude,
-      latitude,
-      city,
-      country,
-    };
-
-    await saveMessages({
-      messages: [
-        {
-          chatId: id,
-          id: message.id,
-          role: "user",
-          parts: message.parts,
-          attachments: message.experimental_attachments ?? [],
-          createdAt: new Date(),
-        },
-      ],
-    });
-
-    const streamId = generateUUID();
-    await createStreamId({ streamId, chatId: id });
-    console.log("Req Hints 📍 : ", requestHints);
-
-    const stream = createDataStream({
+    /* const stream = createDataStream({
       execute: (dataStream) => {
         const result = streamText({
           model: myProvider.languageModel(selectedChatModel),
@@ -229,7 +255,7 @@ export async function POST(request: Request) {
         });
       },
       onError: (e) => {
-        console.log("Error 🔥 : ", e);
+        console.log("Error Create data stream 🔥 : ", e);
         return "Oops, an error occurred!";
       },
     });
@@ -242,9 +268,13 @@ export async function POST(request: Request) {
       );
     } else {
       return new Response(stream);
-    }
+    } */
+    /* return NextResponse.json(stream, {
+      status: 200,
+    }); */
+    return result.toDataStreamResponse();
   } catch (e) {
-    console.log("Error 👀 : ", e);
+    console.log("Error 💥 : ", e);
     return new Response("An error occurred while processing your request!", {
       status: 500,
     });

@@ -93,7 +93,6 @@ export async function saveChat({
   visibility: VisibilityType;
 }) {
   try {
-    console.log("Call SaveChat 😎");
     return await db.insert(chat).values({
       id,
       createdAt: new Date(),

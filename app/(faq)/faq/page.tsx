@@ -5,9 +5,11 @@ import { Card } from "@/components/ui/card";
 import { Textarea } from "@/components/ui/textarea";
 import { useChat } from "@ai-sdk/react";
 import { Bot, Database, LucideRocket, UserRound } from "lucide-react";
-import { toast } from "sonner";
+import { toast } from "@/components/toast";
 import { useRef, useEffect } from "react";
-
+import { ThinkingMessage } from "@/components/message";
+import { motion } from "framer-motion";
+import { useScrollToBottom } from "@/hooks/use-scroll-to-bottom";
 export default function Page() {
   const {
     messages,
@@ -20,17 +22,21 @@ export default function Page() {
   } = useChat({
     api: "faq/api/chat",
     maxSteps: 4,
+    onError: (error) => {
+      stop();
+      toast({
+        type: "error",
+        description: error.message,
+      });
+    },
   });
 
-  const Loader = () => {
-    return (
-      <span className="flex space-x-1 items-center justify-center">
-        <span className="w-2 h-2 bg-white rounded-full animate-dot-bounce [animation-delay:0s]"></span>
-        <span className="w-2 h-2 bg-white rounded-full animate-dot-bounce [animation-delay:0.1s]"></span>
-        <span className="w-2 h-2 bg-white rounded-full animate-dot-bounce [animation-delay:0.2s]"></span>
-      </span>
-    );
-  };
+  const {
+    containerRef: messagesContainerRef,
+    endRef: messagesEndRef,
+    onViewportEnter,
+    onViewportLeave,
+  } = useScrollToBottom();
 
   const ActionButton = () => {
     return (
@@ -65,7 +71,13 @@ export default function Page() {
 
   const MessageContent = () => {
     return (
-      <div className="space-y-4 overflow-y-scroll max-h-[calc(100%-110px)]">
+      <div
+        className="space-y-4 overflow-y-scroll max-h-[calc(100%-110px)] no-scrollbar"
+        style={{
+          scrollbarWidth: "none", // Firefox
+          msOverflowStyle: "none", // IE/Edge
+        }}
+      >
         {messages.map((m) => (
           <div key={m.id} className="whitespace-pre-wrap">
             <div
@@ -74,20 +86,7 @@ export default function Page() {
               }`}
             >
               {m.role !== "user" && <ActionIcon action={m.role} />}
-              <div className={`rounded-2xl p-2 max-w-fit bg-slate-600`}>
-                <p>
-                  {m.content.length > 0 ? (
-                    m.content
-                  ) : (
-                    <span className="flex items-center gap-2">
-                      <Loader />
-                      <span className="italic font-light">
-                        {"calling tool: " + m?.toolInvocations?.[0]?.toolName}
-                      </span>
-                    </span>
-                  )}
-                </p>
-              </div>
+              {m.content.length > 0 && m.content}
               {m.role === "user" && <ActionIcon action={m.role} />}
             </div>
           </div>
@@ -97,8 +96,22 @@ export default function Page() {
   };
 
   return (
-    <div className="flex flex-col w-full max-w-2xl pt-8 mx-auto h-screen relative">
+    <div
+      ref={messagesContainerRef}
+      className="flex flex-col w-full max-w-2xl pt-8 mx-auto h-screen relative"
+    >
       <MessageContent />
+
+      {status === "submitted" &&
+        messages.length > 0 &&
+        messages[messages.length - 1].role === "user" && <ThinkingMessage />}
+      <motion.div
+        ref={messagesEndRef}
+        className="shrink-0 min-w-[24px] min-h-[24px]"
+        onViewportLeave={onViewportLeave}
+        onViewportEnter={onViewportEnter}
+      />
+
       <div className="fixed bottom-0 w-full max-w-2xl">
         <div className="relative">
           <Textarea
@@ -118,9 +131,11 @@ export default function Page() {
                 event.preventDefault();
 
                 if (status !== "ready") {
-                  toast.error(
-                    "Please wait for the model to finish its response!"
-                  );
+                  toast({
+                    type: "error",
+                    description:
+                      "Please wait for the model to finish its response!",
+                  });
                 } else {
                   handleSubmit();
                 }

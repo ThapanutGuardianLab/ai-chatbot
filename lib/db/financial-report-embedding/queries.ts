@@ -189,7 +189,7 @@ export async function getSimilarityMultiQuarter({
       console.error(
         "Error 🔥 : Question is empty. Please provide a valid question."
       );
-      controller.abort();
+      // controller.abort();
     }
 
     const normalizedQuestion = question.toUpperCase();
@@ -206,20 +206,6 @@ export async function getSimilarityMultiQuarter({
       questionEmbedded
     )})`;
 
-    const data = await db
-      .select({
-        quarter: financialReportEmbedding.quarter,
-        content: financialReportEmbedding!.content,
-        similarity,
-      })
-      .from(financialReportEmbedding)
-      .where(and(inArray(financialReportEmbedding.quarter, quartersInYears)))
-      .orderBy((t) => desc(t.similarity))
-      .limit(limit);
-
-    console.log("quartersInYears 🐙 : ", quartersInYears);
-    console.log("data 🔍 : ", data.length);
-    console.log("similarityThreshold: ", similarityThreshold);
     const similarGuides = await db
       .select({
         quarter: financialReportEmbedding.quarter,
@@ -240,7 +226,7 @@ export async function getSimilarityMultiQuarter({
       console.error(
         "Error 🔥 : No similar quarters found for the given query."
       );
-      controller.abort();
+      // controller.abort();
     }
     console.log("--------------- END ✅ ---------------");
     return similarGuides;
