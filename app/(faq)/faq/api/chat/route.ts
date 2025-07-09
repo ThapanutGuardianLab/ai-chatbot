@@ -1,9 +1,19 @@
-import { generateText, streamText, tool } from "ai";
+import {
+  extractReasoningMiddleware,
+  generateObject,
+  generateText,
+  streamText,
+  tool,
+  wrapLanguageModel,
+} from "ai";
 import { z } from "zod";
 import { myProvider } from "@/lib/ai/providers";
 import { getSimilarityMultiQuarter } from "@/lib/db/financial-report-embedding/queries";
 import { openai } from "@ai-sdk/openai";
 import { ResponseMessage } from "@/types/ai/message";
+import { NextResponse } from "next/server";
+import { nextActionResponse as NextActionResponse } from "@/types/common";
+import { azure } from "@ai-sdk/azure";
 
 export const maxDuration = 30;
 
@@ -178,7 +188,132 @@ export async function GET(req: Request): Promise<Response> {
   console.log("Calling chat API with path /faq/api/chat/route.ts 🐙 💬 🌐 👀");
 
   try {
-    const SYS_PROMPT_SERVICE = `You are a Analysis assistant that helps users efficiently fulfill their requests while adhering closely to the provided guidelines.
+    console.log("Before calling streamText API... ⚠️⛏️");
+
+    // Data - Sale Stage
+    const saleStage = await getSaleStage();
+    // Data - Playbook Template
+    let markdownInfo = await getPlaybookTemplate();
+
+    // Modify Playbook Template with Data
+    markdownInfo = await modifyPlaybookValue(saleStage, markdownInfo);
+
+    // Call analyzeNextAction function
+    const result = await analyzeNextAction(markdownInfo);
+    const bestPractice = await getBestPractice();
+    const evaluatedPractice = await evaluatePractice(
+      saleStage,
+      result,
+      bestPractice.saleStageBestPractices
+    );
+    console.log("Evaluated Practice 🧠 : ", evaluatedPractice);
+
+    return Response.json(null, { status: 200 });
+  } catch (error) {
+    console.error("Error calling generateText API: ", error);
+    return new Response(
+      JSON.stringify({ error: "Failed to process the request." }),
+      { status: 500 }
+    );
+  }
+}
+
+export async function PUT(request: Request) {
+  try {
+    const result = await generateText({
+      model: myProvider.languageModel("chat-model-reasoning"),
+      messages: [{ role: "user", content: "What is 25 x 4?" }],
+    });
+    console.log("Generated reasoning and final answer: ", result);
+
+    return NextResponse.json(
+      {
+        message: "Reasoning and final answer generated successfully!",
+        text: result.text,
+        reasoning: result.reasoning,
+      },
+      { status: 200 }
+    );
+  } catch (e) {
+    console.log("Error 💥 : ", e);
+    return new Response("An error occurred while processing your request!", {
+      status: 500,
+    });
+  }
+}
+
+async function getSaleStage(): Promise<any> {
+  /* const data = {
+    industry: "Healthcare",
+    use_case: "Automating patient record management with AI",
+    company_size: "500–1000 employees",
+    geography: "Southeast Asia",
+    pain_points: [
+      "Manual data entry",
+      "Fragmented patient data",
+      "Compliance risks",
+    ],
+    desired_outcomes: [
+      "Improved data accuracy",
+      "Centralized records",
+      "Better regulatory adherence",
+    ],
+  }; */
+  const data = {
+    recipient_name: "Sarah Tan",
+    recipient_role: "Head of Marketing",
+    objective: "Introduce AI-powered CRM enhancements",
+    value_proposition: "Improve customer engagement and reduce churn",
+    call_to_action: "Schedule a 30-minute demo",
+    tone: "Professional yet friendly",
+    context:
+      "Sarah recently led a campaign focused on customer retention, showing her team's interest in tools that support deeper engagement.",
+  };
+
+  return data;
+}
+
+async function getPlaybookTemplate(): Promise<any> {
+  /* const playbookTemplate = `# Context
+    Industry: {{industry}}  
+    Use-case need: {{use_case}}  
+    Company size: {{company_size}}  
+    Region: {{geography}}  
+    Key pains/outcomes sought: {{pain_points}}, {{desired_outcomes}}
+
+    # Task
+    Recommend the 3 best-fit case studies according to provided case profile`; */
+  const playbookTemplate = `# Context
+  * Recipient: {{recipient_name}} ({{recipient_role}})  
+  * Objective: {{objective}}  
+  * Value proposition focus : {{value_proposition}}  
+  * Call to action: {{call_to_action}}  
+  * Tone: {{tone}}
+  * Relevant context: {{context}}
+
+  # Task
+  Please write plain text email with subject line, and greeting, body.`;
+  return playbookTemplate;
+}
+async function modifyPlaybookValue(data: any, playbook: string) {
+  Object.entries(data).forEach(([key, value]) => {
+    if (!playbook.includes(key)) {
+      return;
+    }
+    playbook = playbook?.replace(
+      `{{${key}}}`,
+      Array.isArray(value) ? value.join(", ") : String(value)
+    );
+  });
+  console.log("Modified Playbook Template 📝 : ", playbook);
+
+  return playbook;
+}
+
+async function analyzeNextAction(
+  playbook: string
+): Promise<NextActionResponse> {
+  const SYS_PROMPT_SERVICE = `You are a Analysis assistant that helps users efficiently fulfill their requests while adhering closely to the provided guidelines.
   
   # Instructions
   – After receiving data from the user, analyze the data and the playbook to determine the best next actions.
@@ -206,12 +341,12 @@ export async function GET(req: Request): Promise<Response> {
   # Example 1
   ## User
   "# Context
-  * Recipient: {{recipient_name}} ({{recipient_role}})  
-  * Objective: {{objective}}  
-  * Value proposition focus : {{value_proposition}}  
-  * Call to action: {{call_to_action}}  
-  * Tone: {{tone}}
-  * Relevant context: {{context}}
+  * Recipient: Sarah Tan (Head of Marketing)  
+  * Objective: Introduce AI-powered CRM enhancements  
+  * Value proposition focus : Improve customer engagement and reduce churn  
+  * Call to action: Schedule a 30-minute demo  
+  * Tone: Professional yet friendly  
+  * Relevant context: Sarah recently led a campaign focused on customer retention, showing her team's interest in tools that support deeper engagement.
 
   # Task
   Please write plain text email with subject line, and greeting, body.
@@ -220,84 +355,178 @@ export async function GET(req: Request): Promise<Response> {
   ## Assistant Response 1
   ### Message
   {
-    "nextActions": ["Meeting Appointment"],
+    "nextActions": ["Draft Email"],
   }
   `;
-    console.log("Before calling streamText API... ⚠️⛏️");
 
-    const data = {
-      industry: "Healthcare",
-      use_case: "Automating patient record management with AI",
-      company_size: "500–1000 employees",
-      geography: "Southeast Asia",
-      pain_points: [
-        "Manual data entry",
-        "Fragmented patient data",
-        "Compliance risks",
-      ],
-      desired_outcomes: [
-        "Improved data accuracy",
-        "Centralized records",
-        "Better regulatory adherence",
-      ],
-    };
-    let markdownInfo = `# Context
-    Industry: {{industry}}  
-    Use-case need: {{use_case}}  
-    Company size: {{company_size}}  
-    Region: {{geography}}  
-    Key pains/outcomes sought: {{pain_points}}, {{desired_outcomes}}
-
-    # Task
-    Recommend the 3 best-fit case studies according to provided case profile`;
-
-    Object.entries(data).forEach(([key, value]) => {
-      if (!markdownInfo.includes(key)) {
-        return;
-      }
-      markdownInfo = markdownInfo.replace(
-        `{{${key}}}`,
-        Array.isArray(value) ? value.join(", ") : value
-      );
-    });
-
-    markdownInfo = `# Context
-* Recipient: Sarah Tan (Head of Marketing)  
-* Objective: Introduce AI-powered CRM enhancements  
-* Value proposition focus : Improve customer engagement and reduce churn  
-* Call to action: Schedule a 30-minute demo  
-* Tone: Professional yet friendly  
-* Relevant context: Sarah recently led a campaign focused on customer retention, showing her team's interest in tools that support deeper engagement.
-
-# Task
-Please write plain text email with subject line, and greeting, body.`;
-
-    const messages: Array<ResponseMessage> = [
-      {
-        role: "user",
-        content: `
+  const messages: Array<ResponseMessage> = [
+    {
+      role: "user",
+      content: `
           Please analyze this playbook to determine the best next action :
-          ${markdownInfo}
+          ${playbook}
           `,
-      },
-    ];
+    },
+  ];
 
-    const result = await generateText({
-      maxSteps: 1,
+  const { text, response } = await generateText({
+    maxSteps: 1,
+    model: myProvider.languageModel("chat-model"),
+    system: SYS_PROMPT_SERVICE,
+    messages,
+  });
+
+  console.log("Analyzed Result 📝 : ", response.modelId);
+
+  return JSON.parse(text.trim()) as NextActionResponse;
+}
+
+async function getBestPractice() {
+  return {
+    saleStageBestPractices: [
+      {
+        stage: "Initial Contact",
+        nextAction: "Meeting Appointment",
+        bestPractices: [
+          "Prepare a personalized meeting agenda based on the prospect's industry and challenges.",
+          "Suggest 2–3 available time slots to make scheduling easier.",
+          "Use a calendar link (e.g., Calendly) for hassle-free booking.",
+          "Keep the invitation concise, and highlight the value the prospect will gain from the meeting.",
+        ],
+      },
+      {
+        stage: "Need Analysis",
+        nextAction: "Draft Email",
+        bestPractices: [
+          "Summarize the client’s pain points and goals from the previous call or discovery session.",
+          "Clearly outline how your solution addresses each point.",
+          "Use bullet points or short sections for readability.",
+          "Include a strong call-to-action (e.g., book a follow-up, reply with feedback).",
+        ],
+      },
+      {
+        stage: "Proposal/Quotation",
+        nextAction: "Create Quotation/Invoice",
+        bestPractices: [
+          "Ensure all requirements discussed are reflected clearly in the quotation.",
+          "Break down pricing by item or service for transparency.",
+          "Mention terms (payment, validity, lead time) clearly.",
+          "Use professional templates and double-check contact details and amounts before sending.",
+        ],
+      },
+      {
+        stage: "Follow-up",
+        nextAction: "Draft Email",
+        bestPractices: [
+          "Be polite but clear in reminding about the pending proposal or meeting.",
+          "Include value-driven reminders, e.g., what they gain if they proceed.",
+          "Keep it short and easy to respond to.",
+          "Provide alternative contact options (e.g., phone, LINE) for flexibility.",
+        ],
+      },
+      {
+        stage: "Negotiation",
+        nextAction: "Meeting Appointment",
+        bestPractices: [
+          "Schedule a meeting with key decision-makers if possible.",
+          "Prepare to discuss value and ROI rather than just discounting.",
+          "Bring case studies or references to reinforce confidence.",
+          "Leave room for mutual agreement – listen actively to client concerns.",
+        ],
+      },
+    ],
+  };
+}
+
+async function evaluatePractice(
+  saleStage: any,
+  action: NextActionResponse,
+  bestPractice: any[]
+) {
+  console.log("-- Sale Stage Data -- : ", saleStage);
+  console.log("-- Action Data -- : ", action);
+  console.log("-- Best Practice Data -- : ", bestPractice);
+
+  let currentNextActionStep = "";
+  let iterations = 1;
+  const MAX_ITERATIONS = 3;
+
+  // Initial translation
+  currentNextActionStep = Array.isArray(action.nextActions)
+    ? action.nextActions.join(", ")
+    : action.nextActions ?? "";
+
+  console.log("Received Next Action Step ✉️ : ", currentNextActionStep);
+
+  // Evaluation-optimization loop
+  while (iterations <= MAX_ITERATIONS) {
+    console.log("------------------------------");
+    console.log("Iteration number 🔄 : ", iterations);
+    console.log("Best Practice Data 📚 : ", currentNextActionStep);
+    console.log("------------------------------");
+
+    // Evaluate current translation
+    const { object: evaluation } = await generateObject({
       model: myProvider.languageModel("chat-model"),
-      system: SYS_PROMPT_SERVICE,
-      messages,
+      schema: z.object({
+        qualityScore: z.number().min(1).max(10),
+        practicality: z.boolean(),
+        worthiness: z.boolean(),
+
+        specificIssues: z.array(z.string()),
+        improvementSuggestions: z.array(z.string()),
+      }),
+      system: `You are an expert in evaluating the next sales stage action and adhering closely to the provided guidelines
+
+      # Instructions
+      - Next Action will consist only of 'Meeting Appointment', 'Draft Email', and 'Create Quotation/Invoice'.
+      `,
+      prompt: `Evaluate this data:
+
+      SaleStage: ${JSON.stringify(saleStage)}
+      NextAction: ${currentNextActionStep}
+      BestPractice: ${JSON.stringify(bestPractice)}
+
+      Consider:
+      1. Practicality
+      2. Worthiness`,
     });
 
-    console.log("After calling streamText API... ⛏️🎊");
-    let raw = result.text.trim();
-    console.log("Raw 🐙 : ", raw);
-    return Response.json(JSON.parse(raw), { status: 200 });
-  } catch (error) {
-    console.error("Error calling generateText API: ", error);
-    return new Response(
-      JSON.stringify({ error: "Failed to process the request." }),
-      { status: 500 }
-    );
+    // Check if quality meets threshold
+    console.log("Evaluation result 🌐 : ", JSON.stringify(evaluation, null, 2));
+
+    if (
+      evaluation.qualityScore >= 8 &&
+      evaluation.practicality &&
+      evaluation.worthiness
+    ) {
+      break;
+    }
+
+    // Generate improved translation based on feedback
+    const { text: improvedNextActionStep, response } = await generateText({
+      model: myProvider.languageModel("evaluate-model"), // use a larger model
+      system: `You are an expert in evaluating the next sales stage action and adhering closely to the provided guidelines
+
+      # Instructions
+      - Next Action will consist only of 'Meeting Appointment', 'Draft Email', and 'Create Quotation/Invoice'.
+      `,
+      prompt: `Improve this the next sales stage action based on the following feedback:
+      ${evaluation.specificIssues.join("\n")}
+      ${evaluation.improvementSuggestions.join("\n")}
+
+      NextAction: ${currentNextActionStep}
+      BestPractice: ${JSON.stringify(bestPractice)}`,
+    });
+
+    console.log("improvedTranslation result 🧠 : ", response.modelId);
+
+    currentNextActionStep = improvedNextActionStep;
+    iterations++;
   }
+
+  return {
+    finalTranslation: currentNextActionStep,
+    iterationsRequired: iterations,
+  };
 }
