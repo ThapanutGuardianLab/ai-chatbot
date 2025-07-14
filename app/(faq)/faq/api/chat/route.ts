@@ -1,3 +1,4 @@
+import { activities } from "./../../../../../utils/mockdata";
 import {
   extractReasoningMiddleware,
   generateObject,
@@ -12,8 +13,20 @@ import { getSimilarityMultiQuarter } from "@/lib/db/financial-report-embedding/q
 import { openai } from "@ai-sdk/openai";
 import { ResponseMessage } from "@/types/ai/message";
 import { NextResponse } from "next/server";
-import { nextActionResponse as NextActionResponse } from "@/types/common";
+import {
+  Company,
+  Lead,
+  Rep,
+  nextActionResponse as NextActionResponse,
+  Activity,
+} from "@/types/common";
 import { azure } from "@ai-sdk/azure";
+import {
+  sarahActivities,
+  sarahCompany,
+  sarahLead,
+  sarahOwner,
+} from "@/utils/personal-mockup-data";
 
 export const maxDuration = 30;
 
@@ -191,6 +204,39 @@ export async function GET(req: Request): Promise<Response> {
     console.log("Before calling streamText API... ⚠️⛏️");
 
     // Data - Sale Stage
+    const leadInfo = sarahLead;
+    const companyInfo = sarahCompany;
+    const ownerInfo = sarahOwner;
+    const activitiesInfo = sarahActivities;
+
+    // Call analyzeNextAction function
+    const result = await analyzeNextActionV2(
+      leadInfo,
+      companyInfo,
+      ownerInfo,
+      activitiesInfo
+    );
+
+    console.log("Analyzed Result 📝 : ", result);
+
+    return Response.json(result, { status: 200 });
+  } catch (error) {
+    console.error("Error calling generateText API: ", error);
+    return new Response(
+      JSON.stringify({ error: "Failed to process the request." }),
+      { status: 500 }
+    );
+  }
+}
+
+// Evaluation of the next action based on the playbook and sale stage data
+/* export async function GET(req: Request): Promise<Response> {
+  console.log("Calling chat API with path /faq/api/chat/route.ts 🐙 💬 🌐 👀");
+
+  try {
+    console.log("Before calling streamText API... ⚠️⛏️");
+
+    // Data - Sale Stage
     const saleStage = await getSaleStage();
     // Data - Playbook Template
     let markdownInfo = await getPlaybookTemplate();
@@ -200,6 +246,8 @@ export async function GET(req: Request): Promise<Response> {
 
     // Call analyzeNextAction function
     const result = await analyzeNextAction(markdownInfo);
+    console.log("Analyzed Result 📝 : ", result);
+
     const bestPractice = await getBestPractice();
     const evaluatedPractice = await evaluatePractice(
       saleStage,
@@ -216,7 +264,7 @@ export async function GET(req: Request): Promise<Response> {
       { status: 500 }
     );
   }
-}
+} */
 
 export async function PUT(request: Request) {
   try {
@@ -529,4 +577,74 @@ async function evaluatePractice(
     finalTranslation: currentNextActionStep,
     iterationsRequired: iterations,
   };
+}
+
+async function analyzeNextActionV2(
+  leadInfo: Lead,
+  companyInfo: Company,
+  ownerInfo: Rep,
+  activitiesInfo: Activity[]
+): Promise<NextActionResponse> {
+  const SYS_PROMPT_SERVICE = `You are a Senior Sales Assistant who efficiently analyzes action plans in their sales stage, while closely adhering to the provided guidelines.
+  
+  # Instructions
+  – After receiving data from the user, analyze the sales stage data to determine the action plans.
+  - The action plans will be multiple objects.
+  - Always respond in a JSON format.
+    - The values in next actions and sub-actions should be short phrases, such as 'Meeting Appointment', etc.
+    - The values in sub-actions should be minimum 1 and maximum 3 sub-actions.
+    - Each subAction corresponds to a specific nextAction.
+    - Each sub-action should have the following keys: action, type, channel, description.
+    - The action of sub-action should be a short phrase that define to sub-action.
+    - The type of sub-action should be one of the following: 'Task', 'Email', 'Call', 'Meeting', 'Social'.
+    - The channel of sub-action should be one of the following: 'Phone', 'Email', 'Video', 'LinkedIn', 'On-site', 'Internal', 'Research', 'CRM Note', 'Follow-up', 'Proposal', 'Recap', 'Outreach', 'Nurture', 'Intro'.
+    - The description of sub-action should be a short phrase that describes the action, such as 'Schedule a meeting with the prospect to discuss their needs and how our solution can help them.', etc.
+  - Response to the user with this JSON structure specific only.
+    [
+      {
+        "nextAction": {{next_action}},
+        "subActions": [{
+          "action": {{sub_action_name}},
+          "type": {{sub_action_type}},
+          "channel": {{sub_action_channel}},
+          "description": {{sub_action_description}}
+        }],
+      }
+    ]
+  - Do not discuss prohibited topics (politics, religion, controversial current events, medical, legal,  personal conversations, internal company operations, or criticism of any people or company).
+  
+  # Precise Response Steps (for each response)
+  1. In your response to the user
+      a. Respond appropriately given the above guidelines.
+  
+  # Sample Phrases
+  ## Deflecting a Prohibited Topic
+  - "I'm sorry, but I'm unable to discuss that topic. Is there something else I can help you with?"
+  - "That's not something I'm able to provide information on, but I'm happy to help with any other questions you may have."
+  
+  # Output Format
+  - Always include your final response to the user.
+  `;
+
+  const messages: Array<ResponseMessage> = [
+    {
+      role: "user",
+      content: `
+        Please analyze the sales stage data to determine the next actions and sub-actions :
+        # Lead Information : ${JSON.stringify(leadInfo)}
+        # Company Information : ${JSON.stringify(companyInfo)}
+        # Owner Information : ${JSON.stringify(ownerInfo)}
+        # Activities Information : ${JSON.stringify(activitiesInfo)}
+      `,
+    },
+  ];
+
+  const { text, response } = await generateText({
+    maxSteps: 1,
+    model: myProvider.languageModel("chat-model"),
+    system: SYS_PROMPT_SERVICE,
+    messages,
+  });
+
+  return JSON.parse(text.trim()) as NextActionResponse;
 }
