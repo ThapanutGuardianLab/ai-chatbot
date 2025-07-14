@@ -1,7 +1,3 @@
-export type nextActionResponse = {
-  nextActions: string;
-};
-
 export type Lead = {
   id: string;
   name: string; // Contact name
@@ -61,4 +57,28 @@ export type Activity = {
     | "Engaged";
   notes?: string;
   ownerId: string; // FK to Rep
+};
+
+export type NextActionResponse = {
+  mainAction: string;
+  subActions: {
+    action: string;
+    type: "Task" | "Email" | "Call" | "Meeting" | "Social";
+    channel:
+      | "Phone"
+      | "Email"
+      | "Video"
+      | "LinkedIn"
+      | "On-site"
+      | "Internal"
+      | "Research"
+      | "CRM Note"
+      | "Follow-up"
+      | "Proposal"
+      | "Recap"
+      | "Outreach"
+      | "Nurture"
+      | "Intro";
+    description: string;
+  };
 };
