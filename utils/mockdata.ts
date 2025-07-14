@@ -257,7 +257,7 @@ export const activities: Activity[] = [
   },
   {
     id: "b7e4a3bb-3e2d-4b26-a7d6-7a19e8e229b3",
-    leadId: "9f07c800-1a0e-4c2c-bc5e-e8dff23b7394",
+    leadId: "9f07c800-1a0e-4c2c-bc5e-e8dff23b7394", // Sarah Chen
     date: new Date("2025-06-30T09:30:00"),
     type: "Email",
     channel: "Email",
