@@ -557,24 +557,24 @@ export async function PUT(req: Request): Promise<Response> {
   – After receiving data from the user, analyze the sales stage data to determine the action plans.
   - The action plans will be multiple objects.
   - Always respond in a JSON format.
-    - The values in main-action and sub-actions should be short phrases, such as 'Meeting Appointment', etc.
+    - The main-action represents the next task to be performed.
+    - The values in main-action should be short phrases, such as 'Meeting Appointment', etc.
+    - The type should be one of the following: 'Task', 'Email', 'Call', 'Meeting', 'Social'.
+    - The channel should be one of the following: 'Phone', 'Email', 'Video', 'LinkedIn', 'On-site', 'Internal', 'Research', 'CRM Note', 'Follow-up', 'Proposal', 'Recap', 'Outreach', 'Nurture', 'Intro'.
+    - The description should be a short phrase that describes the action, such as 'Schedule a meeting with the prospect to discuss their needs and how our solution can help them.', etc.
+    
+    - The sub-actions represents the specific actions to be taken for each main-action.
+    - Each sub-action corresponds to a specific main-action.
+    - The values in sub-actions should be short phrases, such as 'Meeting Appointment', etc.
     - The values in sub-actions should be minimum 1 and maximum 3 sub-actions.
-    - Each subAction corresponds to a specific nextAction.
-    - Each sub-action should have the following keys: action, type, channel, description.
-    - The action of sub-action should be a short phrase that define to sub-action.
-    - The type of sub-action should be one of the following: 'Task', 'Email', 'Call', 'Meeting', 'Social'.
-    - The channel of sub-action should be one of the following: 'Phone', 'Email', 'Video', 'LinkedIn', 'On-site', 'Internal', 'Research', 'CRM Note', 'Follow-up', 'Proposal', 'Recap', 'Outreach', 'Nurture', 'Intro'.
-    - The description of sub-action should be a short phrase that describes the action, such as 'Schedule a meeting with the prospect to discuss their needs and how our solution can help them.', etc.
   - Response to the user with this JSON structure specific only.
     [
       {
         "mainAction": {{main_action}},
-        "subActions": [{
-          "action": {{sub_action_name}},
-          "type": {{sub_action_type}},
-          "channel": {{sub_action_channel}},
-          "description": {{sub_action_description}}
-        }],
+        "type": {{sub_action_type}},
+        "channel": {{sub_action_channel}},
+        "description": {{sub_action_description}}
+        "subActions": [{{sub_action_name}}],
       }
     ]
   - Do not discuss prohibited topics (politics, religion, controversial current events, medical, legal,  personal conversations, internal company operations, or criticism of any people or company).
