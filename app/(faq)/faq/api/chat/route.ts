@@ -559,6 +559,8 @@ export async function PUT(req: Request): Promise<Response> {
   - Always respond in a JSON format.
     - The main-action represents the next task to be performed.
     - The values in main-action should be short phrases, such as 'Meeting Appointment', etc.
+    - The most recommended action refers to the main action that appears most frequently within the action plans.
+      - The value in most-recommend-action should be true if the main action is the most recommended action, otherwise false.
     - The type should be one of the following: 'Task', 'Email', 'Call', 'Meeting', 'Social'.
     - The channel should be one of the following: 'Phone', 'Email', 'Video', 'LinkedIn', 'On-site', 'Internal', 'Research', 'CRM Note', 'Follow-up', 'Proposal', 'Recap', 'Outreach', 'Nurture', 'Intro'.
     - The description should be a short phrase that describes the action, such as 'Schedule a meeting with the prospect to discuss their needs and how our solution can help them.', etc.
@@ -571,6 +573,7 @@ export async function PUT(req: Request): Promise<Response> {
     [
       {
         "mainAction": {{main_action}},
+        "mostRecommendAction": {{most_recommend_action}},
         "type": {{sub_action_type}},
         "channel": {{sub_action_channel}},
         "description": {{sub_action_description}}
